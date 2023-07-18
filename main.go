@@ -2,11 +2,12 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"main.go/initialazers"
+	"main.go/initializers"
 )
 
 func init() {
-	initialazers.LoadEnvVariables()
+	initializers.LoadEnvVariables()
+	initializers.ConnectToDb()
 }
 
 func main() {
