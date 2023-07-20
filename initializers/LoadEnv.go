@@ -1,8 +1,7 @@
-package initialazers
+package initializers
 
 import (
 	"log"
-
 	"github.com/joho/godotenv"
 )
 
