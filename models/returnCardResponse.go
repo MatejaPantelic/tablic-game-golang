@@ -1,11 +1,7 @@
 package models
 
-type DiscardReturn struct {
-	Remaining int `json:"remaining"`
-}
-
 type PileReturn struct {
-	Discard DiscardReturn `json:"discard"`
+	Discard map[string]int `json:"discard"`
 }
 
 type returnCardResponse struct {

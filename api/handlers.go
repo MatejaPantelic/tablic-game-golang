@@ -3,29 +3,33 @@ package api
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"main.go/constants"
 	"main.go/models"
 )
 
 func newDeckHandler(c *gin.Context) {
+	resp, err := http.Get(constants.NewDeckURL)
 
-	resp, errURL := http.Get("https://www.deckofcardsapi.com/api/deck/new/")
-	if errURL != nil {
-		log.Fatal(errURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"messege": err,
+		})
 	}
 
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"messege": err,
+		})
 	}
 
 	var newDeckResponse models.NewDeckResponse
 	json.Unmarshal(body, &newDeckResponse)
-
 	c.JSON(http.StatusOK, gin.H{
 		"response": newDeckResponse})
 }
