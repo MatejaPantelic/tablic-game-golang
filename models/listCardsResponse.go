@@ -12,7 +12,7 @@ type Players struct {
 	Remaining string     `json:"remaining"`
 }
 
-type Piles struct {
+type Piles struct { //Ili ovde Pile?
 	Players []Players `json:"players"`
 }
 
@@ -20,5 +20,6 @@ type ListCardResponse struct {
 	Success   bool   `json:"success"`
 	DeckId    string `json:"deck_id"`
 	Remaining string `json:"remaining"`
-	Piles     Pile   `json:"piles"`
+	Piles     Piles   `json:"piles"` //Da li ovde treba Piles?
 }
+//Moze li umesto piles direktno Players[]
