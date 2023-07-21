@@ -13,13 +13,16 @@ type PileList struct {
 }
 
 type Piles struct {
-	Player1 PileList `json:"hand1"`
-	Player2 PileList `json:"hand2"`
+	Hand1 PileList `json:"hand1"`
+	Hand2 PileList `json:"hand2"`
+	Taken1 PileList `json:"taken1"`
+	Taken2 PileList `json:"taken2"`
+	Table PileList `json:"table"`
 }
 
 type ListCardResponse struct {
 	Success   bool   `json:"success"`
 	DeckId    string `json:"deck_id"`
 	Remaining string `json:"remaining"`
-	Piles     Piles  `json:"piles"`
+	Piles     Piles   `json:"piles"`
 }
