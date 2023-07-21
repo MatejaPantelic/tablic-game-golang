@@ -3,14 +3,16 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"main.go/models"
+	// "main.go/initializers"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"fmt"
-	// "bufio"
-	// "os"
-	// "strings"
+	"bufio"
+	"os"
+	"strings"
+	"strconv"
 )
 
 func listPileCards(deck string, pileName string)(Cards []models.CardList){
@@ -29,66 +31,112 @@ func listPileCards(deck string, pileName string)(Cards []models.CardList){
 	var ListCardResponse models.ListCardResponse
 	json.Unmarshal(body, &ListCardResponse)
 
-	// var Piles []models.Players
-	// json.Unmarshal(body, &ListCardResponse.Piles.Players)
-
-	//Kako da iscitam sve karte?
-	for _, player := range ListCardResponse.Piles.Players {
-		fmt.Println("Remaining:", player.Remaining)
-
-		// for _, card := range player.Cards {
-		// 	fmt.Println("Card:", card)
-		// }
+	var CardsArray []models.CardList
+	switch(pileName){
+	case "hand1": CardsArray = ListCardResponse.Piles.Hand1.Cards
+	case "hand2": CardsArray = ListCardResponse.Piles.Hand2.Cards
+	case "table": CardsArray = ListCardResponse.Piles.Table.Cards
+	default: 
 	}
 
-	fmt.Println(len(ListCardResponse.Piles.Players))
+	for _, card := range CardsArray {
+		Cards = append(Cards, card)
+	}
 
 	return
+}
 
-	// c.JSON(http.StatusOK, gin.H{
-	// 	"response": ListCardsResponse})
+func drawCardsFromPile(deck string, pileName string){
+
 }
 
 
 func TakeCardsFromTable(c *gin.Context){
-	//choose card from hand
-	// scanner := bufio.NewScanner(os.Stdin)
-	// fmt.Print("Which card you want to throw:")
-	// scanner.Scan()
-	// HandCard := scanner.Text()
-	// fmt.Println(HandCard)
+	//EXTRACT PARAMETERS
+	// playerId := c.Param("player")
+	// deckId := c.Param("deck")
+	// var game models.Game
+	// initializers.DB.Where("user_id=? AND deck_pile=?", playerId, deckId).Find(&game)
 
-	//validate card from hand
-	// var HandCards []models.CardList = listPileCards("y54h3qiktc1l", "hand1")
-	listPileCards("y54h3qiktc1l", "hand1")
+	//CHOOSE CARD FROM HAND
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("Which card you want to throw:")
+	scanner.Scan()
+	HandCard := scanner.Text()
+	fmt.Println(HandCard)
 
-	//choose cards from table
-	// var stringsList []string
-	// fmt.Println("Enter cards you want to take from table (type 'done' to finish):")
-	// for {
-	// 	scanner.Scan()
-	// 	card := scanner.Text()
-	// 	if strings.ToLower(card) == "done" {
-	// 		break
-	// 	}
-	// 	CardsList = append(CardsList, strings.ToUpper(card))
-	// }
+	//VALIDATE CARD FROM HAND
+	// var HandCards []models.CardList = listPileCards(game.DeckId, game.HandPile)
+	var HandCards []models.CardList = listPileCards("y54h3qiktc1l", "hand1")
+	var existInHand bool = false
+	for _, card := range HandCards {
+		if card.Code == HandCard{
+			existInHand=true
+		}
+	}
+	if(!existInHand){
+		c.JSON(http.StatusOK, gin.H{"response": "The selected card is not in your hand."})
+	}
+
+	//CHOOSE CARDS FROM TABLE
+	var CardsList []string
+	fmt.Println("Enter cards you want to take from table (type 'done' to finish):")
+	for {
+		scanner.Scan()
+		card := scanner.Text()
+		if strings.ToLower(card) == "done" {
+			break
+		}
+		CardsList = append(CardsList, strings.ToUpper(card))
+	}
 	// fmt.Println("Cards you want to take:")
 	// for _, card := range CardsList {
-	// 	fmt.Println(cards.Code)
+	// 	fmt.Println(card)
 	// }
 
-	//validate cards from table
-	// var TableCards []models.CardList = listPileCards("y54h3qiktc1l", "hand1")
-	listPileCards("y54h3qiktc1l", "table")
+	//VALIDATE CARDS FROM TABLE
+	// var TableCards []models.CardList = listPileCards(game.DeckId, game.HandPile)
+	var TableCards []models.CardList = listPileCards("y54h3qiktc1l", "table")
+	for _, cardT := range CardsList {
+		existInHand = false
+		for _, cardTable := range TableCards{
+			if cardT == cardTable.Code{
+				existInHand = true
+			}
+		}
+		if(existInHand == false)	{
+			c.JSON(http.StatusOK, gin.H{"response": "Some of selected cards is not on the table."})
+		}	
+	}
 
-	//check values!
-
-	//if valid
-	//take card from hand
-
-	//take card(s) from table
-
-	//move cards to taken
+	//CHECK VALUES
+	var valid bool = false
+	var HandCardValue int
+	var sum int = 0
+	switch(HandCard[0]){
+	case 'J': HandCardValue = 12
+	case 'Q': HandCardValue = 13
+	case 'K': HandCardValue = 14
+	}
+	for _, cardT := range CardsList{
+		valStr := cardT[0]
+		var val int
+		switch(cardT[0]){
+			case 'J': val = 12
+			case 'Q': val = 13
+			case 'K': val = 14
+			default: val,_ = strconv.Atoi(string(valStr))
+		}
+		sum += val
+		fmt.Println(val, sum)
+	}
+	if (sum%HandCardValue == 0){
+		valid = true
+	}
+	if(valid){
+		c.JSON(http.StatusOK, gin.H{"response": "You can take"})
+	}else{
+		c.JSON(http.StatusOK, gin.H{"response": "Error!!!!!!!!!"})
+	}
 
 }
