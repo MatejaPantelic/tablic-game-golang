@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -26,8 +27,7 @@ func newDeckHandler(c *gin.Context) {
 	var newDeckResponse models.NewDeckResponse
 	json.Unmarshal(body, &newDeckResponse)
 
-	c.JSON(http.StatusOK, gin.H{
-		"response": newDeckResponse})
+	fmt.Println(newDeckResponse.DeckId)
 }
 
 func InitializersHandlers(r *gin.Engine) {
