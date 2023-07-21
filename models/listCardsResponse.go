@@ -13,8 +13,8 @@ type PileList struct {
 }
 
 type Piles struct {
-	Player1 PileList `json:"player1"`
-	Player2 PileList `json:"player2"`
+	Player1 PileList `json:"hand1"`
+	Player2 PileList `json:"hand2"`
 }
 
 type ListCardResponse struct {

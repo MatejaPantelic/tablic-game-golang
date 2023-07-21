@@ -36,4 +36,5 @@ func newDeckHandler(c *gin.Context) {
 
 func InitializersHandlers(r *gin.Engine) {
 	r.GET("/cards", newDeckHandler)
+	r.GET("/throwCard/:cardCode/:deckId/:playerPile", throwCardHandler)
 }
