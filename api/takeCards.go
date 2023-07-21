@@ -10,11 +10,12 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
+	"main.go/utilities"
 )
 
 //Function for listing cards in a pile
 func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
-	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/list/", deck, pileName)
+	url := fmt.Sprintf(utilities.LIST_PILE_CARDS_URL, deck, pileName)
 	resp, errURL := http.Get(url)
 	if errURL != nil {
 		log.Fatal(errURL)
@@ -41,7 +42,7 @@ func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
 
 //Function for draeing cards from a pile
 func drawCardsFromPile(deck string, pileName string, cards string){
-	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/draw/?cards=%s", deck, pileName, cards)
+	url := fmt.Sprintf(utilities.DRAW_CARDS_FROM_PILE_URL, deck, pileName, cards)
 	resp, errURL := http.Get(url)
 	if errURL != nil {
 		log.Fatal(errURL)
@@ -59,7 +60,7 @@ func drawCardsFromPile(deck string, pileName string, cards string){
 
 //Function for adding cards to a pile
 func addToPile(deck string, pileName string, cards string){
-	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/add/?cards=%s", deck, pileName, cards)
+	url := fmt.Sprintf(utilities.ADD_TO_PILE_URL, deck, pileName, cards)
 	resp, errURL := http.Get(url)
 	if errURL != nil {
 		log.Fatal(errURL)
