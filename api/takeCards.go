@@ -15,6 +15,7 @@ import (
 	"strconv"
 )
 
+//Function for listing cards in a pile
 func listPileCards(deck string, pileName string)(Cards []models.CardList){
 	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/list/", deck, pileName)
 	resp, errURL := http.Get(url)
@@ -46,6 +47,7 @@ func listPileCards(deck string, pileName string)(Cards []models.CardList){
 	return
 }
 
+//Function for draeing cards from a pile
 func drawCardsFromPile(deck string, pileName string, cards string){
 	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/draw/?cards=%s", deck, pileName, cards)
 	resp, errURL := http.Get(url)
@@ -63,6 +65,7 @@ func drawCardsFromPile(deck string, pileName string, cards string){
 	json.Unmarshal(body, &DrowCardResponse)
 }
 
+//Function for adding cards to a pile
 func addToPile(deck string, pileName string, cards string){
 	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/add/?cards=%s", deck, pileName, cards)
 	resp, errURL := http.Get(url)
@@ -105,7 +108,7 @@ func TakeCardsFromTable(c *gin.Context){
 		}
 	}
 	if(!existInHand){
-		c.JSON(http.StatusOK, gin.H{"response": "The selected card is not in your hand."})
+		c.JSON(http.StatusNotFound, gin.H{"response": "The selected card is not in your hand."})
 	}
 
 	//CHOOSE CARDS FROM TABLE
@@ -135,7 +138,7 @@ func TakeCardsFromTable(c *gin.Context){
 			}
 		}
 		if(existInHand == false)	{
-			c.JSON(http.StatusOK, gin.H{"response": "Some of selected cards is not on the table."})
+			c.JSON(http.StatusNotFound, gin.H{"response": "Some of selected cards is not on the table."})
 		}	
 	}
 
@@ -163,6 +166,8 @@ func TakeCardsFromTable(c *gin.Context){
 	if (sum%HandCardValue == 0){
 		valid = true
 	}
+
+	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
 	if(valid){
 		// drawCardsFromPile(game.DeckId, game.HandPile, HandCard)
 		drawCardsFromPile("y54h3qiktc1l", "hand1", HandCard)
@@ -175,7 +180,7 @@ func TakeCardsFromTable(c *gin.Context){
 
 		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table to taken pile"})
 	}else{
-		c.JSON(http.StatusOK, gin.H{"response": "You can't take chosen cards"})
+		c.JSON(http.StatusNotFound, gin.H{"response": "You can't take chosen cards"})
 	}
 
 }
