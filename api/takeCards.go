@@ -46,8 +46,38 @@ func listPileCards(deck string, pileName string)(Cards []models.CardList){
 	return
 }
 
-func drawCardsFromPile(deck string, pileName string){
+func drawCardsFromPile(deck string, pileName string, cards string){
+	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/draw/?cards=%s", deck, pileName, cards)
+	resp, errURL := http.Get(url)
+	if errURL != nil {
+		log.Fatal(errURL)
+	}
 
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var DrowCardResponse models.DrawingFromPilesResponse
+	json.Unmarshal(body, &DrowCardResponse)
+}
+
+func addToPile(deck string, pileName string, cards string){
+	url := fmt.Sprintf("https://www.deckofcardsapi.com/api/deck/%s/pile/%s/add/?cards=%s", deck, pileName, cards)
+	resp, errURL := http.Get(url)
+	if errURL != nil {
+		log.Fatal(errURL)
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var AddCardsResponse models.AddingToPilesResponse
+	json.Unmarshal(body, &AddCardsResponse)
 }
 
 
@@ -95,7 +125,7 @@ func TakeCardsFromTable(c *gin.Context){
 	// }
 
 	//VALIDATE CARDS FROM TABLE
-	// var TableCards []models.CardList = listPileCards(game.DeckId, game.HandPile)
+	// var TableCards []models.CardList = listPileCards(game.DeckId, game.TablePile)
 	var TableCards []models.CardList = listPileCards("y54h3qiktc1l", "table")
 	for _, cardT := range CardsList {
 		existInHand = false
@@ -134,9 +164,18 @@ func TakeCardsFromTable(c *gin.Context){
 		valid = true
 	}
 	if(valid){
-		c.JSON(http.StatusOK, gin.H{"response": "You can take"})
+		// drawCardsFromPile(game.DeckId, game.HandPile, HandCard)
+		drawCardsFromPile("y54h3qiktc1l", "hand1", HandCard)
+		separator := ","
+		cards := strings.Join(CardsList, separator)
+		// drawCardsFromPile(game.DeckId, game.TablePile, cards)
+		drawCardsFromPile("y54h3qiktc1l", "hand1", cards)
+		// addToPile((game.DeckId, game.TakePile, cards+","+HandCard)
+		addToPile("y54h3qiktc1l", "taken1", cards+","+HandCard)
+
+		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table to taken pile"})
 	}else{
-		c.JSON(http.StatusOK, gin.H{"response": "Error!!!!!!!!!"})
+		c.JSON(http.StatusOK, gin.H{"response": "You can't take chosen cards"})
 	}
 
 }
