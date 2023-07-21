@@ -26,5 +26,5 @@ type ListCardResponse struct {
 	Success   bool   `json:"success"`
 	DeckId    string `json:"deck_id"`
 	Remaining string `json:"remaining"`
-	Piles     Pile   `json:"piles"`
+	Piles     Piles  `json:"piles"`
 }
