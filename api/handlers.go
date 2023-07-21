@@ -6,15 +6,16 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"main.go/constants"
 	"main.go/models"
 )
 
 func newDeckHandler(c *gin.Context) {
-	resp, errURL := http.Get("https://www.deckofcardsapi.com/api/deck/new/")
+	resp, err := http.Get(constants.NewDeckURL)
 
-	if errURL != nil {
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"messege": errURL,
+			"messege": err,
 		})
 	}
 
