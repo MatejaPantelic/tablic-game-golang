@@ -1,11 +1,7 @@
 package models
 
-type Discard struct {
-	Remaining int `json:"remaining"`
-}
-
 type Pile struct {
-	Discard Discard `json:"discard"`
+	Discard map[string]int `json:"discard"`
 }
 
 type AddingToPilesResponse struct {
