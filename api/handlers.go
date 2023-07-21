@@ -32,5 +32,5 @@ func newDeckHandler(c *gin.Context) {
 
 func InitializersHandlers(r *gin.Engine) {
 	r.GET("/cards", newDeckHandler)
-	r.GET("/takecardsfromtable/", TakeCardsFromTable)
+	r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", TakeCardsFromTable)
 }
