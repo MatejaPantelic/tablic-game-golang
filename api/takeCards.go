@@ -136,7 +136,6 @@ func TakeCardsFromTable(c *gin.Context){
 	case 'K': HandCardValue = 14
 	default: HandCardValue,_ = strconv.Atoi(string(HandCard[0]))
 	}
-	fmt.Println(HandCardValue)
 
 	//Count number of As in Taken pile
 	for _, cardTaken := range TakenCards{
@@ -176,7 +175,6 @@ func TakeCardsFromTable(c *gin.Context){
 			default: val,_ = strconv.Atoi(string(cardTaken[0]))
 		}
 		sum += val
-		fmt.Println(val, sum)
 	}
 
 	//As the sum of each combination differs by 10, we will check countA+1 sums each greater by 10
