@@ -9,7 +9,7 @@ type CardList struct {
 
 type PileList struct {
 	Cards     []CardList `json:"cards"`
-	Remaining string     `json:"remaining"`
+	Remaining int     `json:"remaining"`
 }
 
 type Piles struct {
@@ -23,6 +23,6 @@ type Piles struct {
 type ListCardResponse struct {
 	Success   bool   `json:"success"`
 	DeckId    string `json:"deck_id"`
-	Remaining string `json:"remaining"`
-	Piles     Piles   `json:"piles"`
+	Remaining int `json:"remaining"`
+	Piles     Piles  `json:"piles"`
 }
