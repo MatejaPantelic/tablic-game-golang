@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"main.go/models"
 	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"fmt"
@@ -21,14 +20,13 @@ func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
 		log.Fatal(errURL)
 	}
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	body := parseJsonToStruct(resp) 
 
 	var ListCardResponse models.ListCardResponse
-	json.Unmarshal(body, &ListCardResponse)
+	err := json.Unmarshal(body, &ListCardResponse)
+	if(err != nil){
+		log.Fatal(err)
+	}
 
 	switch(pileName){
 	case "hand1": CardsArray = ListCardResponse.Piles.Hand1.Cards
@@ -40,7 +38,7 @@ func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
 	return
 }
 
-//Function for draeing cards from a pile
+//Function for drawing cards from a pile
 func drawCardsFromPile(deck string, pileName string, cards string){
 	url := fmt.Sprintf(constants.DrawCardsFromPileURL, deck, pileName, cards)
 	resp, errURL := http.Get(url)
@@ -48,14 +46,13 @@ func drawCardsFromPile(deck string, pileName string, cards string){
 		log.Fatal(errURL)
 	}
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	body := parseJsonToStruct(resp) 
 
 	var DrowCardResponse models.DrawingFromPilesResponse
-	json.Unmarshal(body, &DrowCardResponse)
+	err := json.Unmarshal(body, &DrowCardResponse)
+	if(err != nil){
+		log.Fatal(err)
+	}
 }
 
 //Function for adding cards to a pile
@@ -66,14 +63,14 @@ func addToPile(deck string, pileName string, cards string){
 		log.Fatal(errURL)
 	}
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
+	body := parseJsonToStruct(resp) 
+
+	var AddCardsResponse models.AddingToPilesResponse
+	err := json.Unmarshal(body, &AddCardsResponse)
+	if(err != nil){
 		log.Fatal(err)
 	}
 
-	var AddCardsResponse models.AddingToPilesResponse
-	json.Unmarshal(body, &AddCardsResponse)
 }
 
 type RequestData struct{
@@ -93,34 +90,36 @@ func TakeCardsFromTable(c *gin.Context){
 	err := c.BindJSON(&RequestData)
 	if(err != nil){
 		c.JSON(http.StatusBadRequest, gin.H{"response": "Invalid JSON format in request body"})
+		return
 	}
-	HandCard := RequestData.HandCard
-	TakenCardsString := RequestData.TakenCards
+	HandCard := strings.ToUpper(RequestData.HandCard)
+	TakenCardsString := strings.ToUpper(RequestData.TakenCards)
 	TakenCards := strings.Split(TakenCardsString, ",")
 
 	//VALIDATE CARD FROM HAND
-	var HandCards []models.CardList = listPileCards(deckId, handPile)
-	var existInHand bool = false
-	for _, card := range HandCards {
-		if card.Code == HandCard{
-			existInHand=true
-		}
+	if(!existsInDeck(HandCard)){
+		c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
+		return
 	}
-	if(!existInHand){
-		c.JSON(http.StatusNotFound, gin.H{"response": "The selected card is not in your hand."})
+
+	var HandCards []models.CardList = listPileCards(deckId, handPile)
+
+	if(!existsInPile(HandCard, HandCards)){
+		c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
+		return
 	}
 
 	//VALIDATE CARDS FROM TABLE
 	var TableCards []models.CardList = listPileCards(deckId, "table")
 	for _, cardTaken := range TakenCards {
-		existInHand = false
-		for _, cardTable := range TableCards{
-			if cardTaken == cardTable.Code{
-				existInHand = true
-			}
+		if(!existsInDeck(cardTaken)){
+			c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
+			return
 		}
-		if(existInHand == false)	{
-			c.JSON(http.StatusNotFound, gin.H{"response": "Some of selected cards is not on the table."})
+		
+		if(!existsInPile(cardTaken, TableCards))	{
+			c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
+			return
 		}	
 	}
 
@@ -129,6 +128,7 @@ func TakeCardsFromTable(c *gin.Context){
 	var HandCardValue int
 	var sum int = 0
 	switch(HandCard[0]){
+	case '0': HandCardValue = 10
 	case 'J': HandCardValue = 12
 	case 'Q': HandCardValue = 13
 	case 'K': HandCardValue = 14
@@ -138,6 +138,7 @@ func TakeCardsFromTable(c *gin.Context){
 	for _, cardTaken := range TakenCards{
 		var val int
 		switch(cardTaken[0]){
+			case '0': val = 10
 			case 'J': val = 12
 			case 'Q': val = 13
 			case 'K': val = 14
@@ -158,7 +159,7 @@ func TakeCardsFromTable(c *gin.Context){
 		drawCardsFromPile(deckId, "table", cards)
 		addToPile(deckId, takenPile, cards+","+HandCard)
 
-		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table to taken pile"})
+		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
 	}else{
 		c.JSON(http.StatusNotFound, gin.H{"response": "You can't take chosen cards"})
 	}
