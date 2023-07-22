@@ -127,18 +127,49 @@ func TakeCardsFromTable(c *gin.Context){
 	var valid bool = false
 	var HandCardValue int
 	var sum int = 0
+	var countA int = 0
 	switch(HandCard[0]){
 	case '0': HandCardValue = 10
+	case 'A': HandCardValue = 11 //We will always consider A from hand as 11
 	case 'J': HandCardValue = 12
 	case 'Q': HandCardValue = 13
 	case 'K': HandCardValue = 14
 	default: HandCardValue,_ = strconv.Atoi(string(HandCard[0]))
 	}
 	fmt.Println(HandCardValue)
+
+	//Count number of As in Taken pile
+	for _, cardTaken := range TakenCards{
+		if(cardTaken[0] == 'A'){
+			countA++;
+		}
+	}
+
+	//depending on nomber of As in Taken pile we have 5 cases
+	//Case1: countA=0
+	//Case2: countA=1 -> 2 combinations: 1             sum=1
+	//                                   11            sum=11 
+	
+	//Case3: countA=2 -> 3 combinations: 1  1          sum=2
+	//                                   1  11         sum=12 
+	//                                   11 11         sum=22
+
+	//Case4: countA=3 -> 4 combinations: 1  1  1       sum=3 
+	//                                   1  1  11      sum=13
+	//                                   1  11 11      sum=23
+	//                                   11 11 11      sum=33
+
+	//Case5: countA=4 -> 5 combinations: 1  1  1  1    sum=4
+	//                                   1  1  1  11   sum=14
+	//                                   1  1  11 11   sum=24
+	//                                   1  11 11 11   sum=34
+	//                                   11 11 11 11   sum=44
+
 	for _, cardTaken := range TakenCards{
 		var val int
 		switch(cardTaken[0]){
 			case '0': val = 10
+			case 'A': val = 1 //Firstly, we will consider all As as 1 and calculate the sum
 			case 'J': val = 12
 			case 'Q': val = 13
 			case 'K': val = 14
@@ -147,8 +178,15 @@ func TakeCardsFromTable(c *gin.Context){
 		sum += val
 		fmt.Println(val, sum)
 	}
-	if (sum%HandCardValue == 0){
-		valid = true
+
+	//As the sum of each combination differs by 10, we will check countA+1 sums each greater by 10
+	//If modul of any sum by HandCardValue is 0, player can take cards otherwise he can't
+	for i:=0; i<=countA; i++{
+		sum += i*10;
+		if (sum%HandCardValue == 0){
+			valid = true
+			break
+		}
 	}
 
 	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
