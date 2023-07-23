@@ -9,9 +9,12 @@ type User struct {
 
 type Game struct {
 	gorm.Model
-	Score  int  `json:"score"`
-	UserID int  `json:"user_id"`
-	DeckId string
-	HandPile string
-	User   User `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Score         int    `json:"score"`
+	DeckPile      string `json:"deckPile"`
+	TablePile     string `json:"tablePile"`
+	HandPile      string `json:"handPile"`
+	CollectedPile string `json:"collectedPile"`
+	First         bool   `json:"first"`
+	UserID        int    `json:"user_id"`
+	User          User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
