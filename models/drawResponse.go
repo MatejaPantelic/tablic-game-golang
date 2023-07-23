@@ -1,10 +1,15 @@
 package models
 
+type Images struct {
+	Svg string `json:"svg"`
+	Png string `json:"png"`
+}
 type CardList struct {
-	Image string `json:"image"`
-	Value string `json:"value"`
-	Suit  string `json:"suit"`
-	Code  string `json:"code"`
+	Image  string `json:"image"`
+	Value  string `json:"value"`
+	Suit   string `json:"suit"`
+	Code   string `json:"code"`
+	Images Images `json:"images"`
 }
 type PileList struct {
 	Cards     []CardList `json:"cards"`
