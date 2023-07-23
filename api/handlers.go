@@ -11,7 +11,7 @@ import (
 )
 
 func newDeckHandler(c *gin.Context) {
-	resp, err := http.Get(constants.NewDeckURL)
+	resp, err := http.Get(constants.NEW_DECK_URL)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
