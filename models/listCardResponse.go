@@ -23,8 +23,8 @@ type Piles struct {
 	Taken2 PileList `json:"taken2"`
 	Table  PileList `json:"table"`
 }
-type DrawResponse struct {
-	Success   string `json:"success"`
+type ListCardResponse struct {
+	Success   bool   `json:"success"`
 	DeckId    string `json:"deck_id"`
 	Remaining int    `json:"remaining"`
 	Piles     Piles  `json:"piles"`

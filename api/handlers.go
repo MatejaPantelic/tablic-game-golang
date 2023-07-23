@@ -24,7 +24,7 @@ func ShowPlayerCards(c *gin.Context) {
 	result := initializers.DB.Where("user_id = ? AND deck_pile = ?", userid, deckid).Find(&game)
 
 	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"poruka": result.Error})
+		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
 	}
 
 	//call endpoint for list hand cards with necessary information DECK ID and NAME OF HAND PILE used from variable game
@@ -32,11 +32,11 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//handle if there some error from nttp
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"reponse": "Hand cards is not found!"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Hand cards is not found!"})
 	}
 
 	// declare variable in acceptable format
-	var drawResponse models.DrawResponse
+	var drawResponse models.ListCardResponse
 
 	//call function for json parse
 	parserror := tools.JsonParse(respHand, c, &drawResponse)
@@ -64,11 +64,11 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//handle if there some error from nttp
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"reponse": "Table cards is not found!"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Table cards is not found!"})
 	}
 
 	// declare variable in acceptable format
-	var drawResponseDeck models.DrawResponse
+	var drawResponseDeck models.ListCardResponse
 	//call function for json parse
 	parseerror := tools.JsonParse(respDeck, c, &drawResponseDeck)
 
