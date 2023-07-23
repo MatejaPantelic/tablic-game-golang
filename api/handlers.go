@@ -2,8 +2,9 @@ package api
 
 import (
 	"fmt"
+	"encoding/json"
+	"io"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"main.go/constants"
 	"main.go/initializers"
@@ -82,5 +83,29 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//return response with needed information
 	c.JSON(http.StatusOK, gin.H{"User hand cards": handcardsarray, "Cards from table": drawResponseDeck.Piles.Table})
-
 }
+
+func newDeckHandler(c *gin.Context) {
+	resp, err := http.Get(constants.NEW_DECK_URL)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"messege": err,
+		})
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"messege": err,
+		})
+	}
+
+	var newDeckResponse models.NewDeckResponse
+	json.Unmarshal(body, &newDeckResponse)
+	c.JSON(http.StatusOK, gin.H{
+		"response": newDeckResponse})
+}
+
