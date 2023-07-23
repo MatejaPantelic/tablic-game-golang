@@ -6,23 +6,20 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"main.go/models"
 )
 
-func JsonParse(reponse *http.Response, c *gin.Context) (*models.DrawResponse, error) {
+func JsonParse(response *http.Response, c *gin.Context, parameter interface{}) error {
 	//part of code for accepting response
-	defer reponse.Body.Close()
-	body, _ := io.ReadAll(reponse.Body)
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
 
-	//variable for store reponse from http request in acceptable format
-	var drawResponse models.DrawResponse
-
-	errHandUm := json.Unmarshal(body, &drawResponse)
-
-	// Error checking for JSON unmarshaling.
-	if errHandUm != nil {
-		return nil, errHandUm
-
+	//check error during reading response
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Error during reading response!"})
 	}
-	return &drawResponse, nil
+
+	// error expectation if exist
+	errHandUm := json.Unmarshal(body, parameter)
+
+	return errHandUm
 }

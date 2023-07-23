@@ -28,15 +28,18 @@ func ShowPlayerCards(c *gin.Context) {
 	}
 
 	//call endpoint for list hand cards with necessary information DECK ID and NAME OF HAND PILE used from variable game
-	respHand, err := http.Get(fmt.Sprintf(constants.ListPileCardsURL, game.DeckPile, game.HandPile))
+	respHand, err := http.Get(fmt.Sprintf(constants.LISTPILECARDS_URL, game.DeckPile, game.HandPile))
 
 	//handle if there some error from nttp
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"reponse": "Hand cards is not found!"})
 	}
 
+	// declare variable in acceptable format
+	var drawResponse models.DrawResponse
+
 	//call function for json parse
-	respFormat, parserror := tools.JsonParse(respHand, c)
+	parserror := tools.JsonParse(respHand, c, &drawResponse)
 
 	//check parse error
 	if parserror != nil {
@@ -50,22 +53,24 @@ func ShowPlayerCards(c *gin.Context) {
 	var handcardsarray []models.CardList
 
 	//http reponse return both json object(hand1 & hand2), we looks for one
-	if respFormat.Piles.Hand1.Cards == nil {
-		handcardsarray = respFormat.Piles.Hand2.Cards
-	} else if respFormat.Piles.Hand2.Cards == nil {
-		handcardsarray = respFormat.Piles.Hand1.Cards
+	if drawResponse.Piles.Hand1.Cards == nil {
+		handcardsarray = drawResponse.Piles.Hand2.Cards
+	} else if drawResponse.Piles.Hand2.Cards == nil {
+		handcardsarray = drawResponse.Piles.Hand1.Cards
 	}
 
 	//call endpoint for list table cards with necessary information DECK ID and NAME OF TABLE PILE used from variable game
-	respDeck, err := http.Get(fmt.Sprintf(constants.ListPileCardsURL, game.DeckPile, game.TablePile))
+	respDeck, err := http.Get(fmt.Sprintf(constants.LISTPILECARDS_URL, game.DeckPile, game.TablePile))
 
 	//handle if there some error from nttp
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"reponse": "Table cards is not found!"})
 	}
 
+	// declare variable in acceptable format
+	var drawResponseDeck models.DrawResponse
 	//call function for json parse
-	drawResponseDeck, parseerror := tools.JsonParse(respDeck, c)
+	parseerror := tools.JsonParse(respDeck, c, &drawResponseDeck)
 
 	//check parse error
 	if parseerror != nil {
