@@ -36,7 +36,7 @@ func existsInDeck(cardCode string)(exist bool){
 	return
 }
 
-//Function for checking if cards exists in specific pile
+//Function for checking if card exists in specific pile
 func existsInPile(cardCode string, pile []models.CardList)(exist bool){
 	exist = false
 	for _, card := range pile {

@@ -14,7 +14,7 @@ import (
 
 //Function for listing cards in a pile
 func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
-	url := fmt.Sprintf(constants.ListPileCardsURL, deck, pileName)
+	url := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deck, pileName)
 	resp, errURL := http.Get(url)
 	if errURL != nil {
 		log.Fatal(errURL)
@@ -40,7 +40,7 @@ func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
 
 //Function for drawing cards from a pile
 func drawCardsFromPile(deck string, pileName string, cards string){
-	url := fmt.Sprintf(constants.DrawCardsFromPileURL, deck, pileName, cards)
+	url := fmt.Sprintf(constants.DRAW_CARDS_FROM_PILE_URL, deck, pileName, cards)
 	resp, errURL := http.Get(url)
 	if errURL != nil {
 		log.Fatal(errURL)
@@ -57,7 +57,7 @@ func drawCardsFromPile(deck string, pileName string, cards string){
 
 //Function for adding cards to a pile
 func addToPile(deck string, pileName string, cards string){
-	url := fmt.Sprintf(constants.AddToPileUrl, deck, pileName, cards)
+	url := fmt.Sprintf(constants.ADD_TO_PILE_URL, deck, pileName, cards)
 	resp, errURL := http.Get(url)
 	if errURL != nil {
 		log.Fatal(errURL)
