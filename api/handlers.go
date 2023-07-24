@@ -30,7 +30,7 @@ func ShowPlayerCards(c *gin.Context) {
 	}
 
 	//call endpoint for list hand cards with necessary information DECK ID and NAME OF HAND PILE used from variable game
-	respHand, err := http.Get(fmt.Sprintf(constants.LISTPILECARDS_URL, game.DeckPile, game.HandPile))
+	respHand, err := http.Get(fmt.Sprintf(constants.LIST_PILE_CARDS_URL, game.DeckPile, game.HandPile))
 
 	//handle if there some error from nttp
 	if err != nil {
@@ -62,7 +62,7 @@ func ShowPlayerCards(c *gin.Context) {
 	}
 
 	//call endpoint for list table cards with necessary information DECK ID and NAME OF TABLE PILE used from variable game
-	respDeck, err := http.Get(fmt.Sprintf(constants.LISTPILECARDS_URL, game.DeckPile, game.TablePile))
+	respDeck, err := http.Get(fmt.Sprintf(constants.LIST_PILE_CARDS_URL, game.DeckPile, game.TablePile))
 
 	//handle if there some error from nttp
 	if err != nil {
