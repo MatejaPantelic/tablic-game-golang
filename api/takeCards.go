@@ -217,8 +217,13 @@ func TakeCardsFromTable(c *gin.Context){
 
 	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
 	drawCardsFromPile(deckId, handPile, HandCard)
-	separator := ","
-	cards := strings.Join(TakenCards, separator)
+	cards := ""
+	for i := 0; i < len(TakenCardsGroups); i++ {
+		cards += TakenCardsGroups[i]
+		if(i < len(TakenCardsGroups)-1){
+			cards += ","
+		}
+	}
 	drawCardsFromPile(deckId, "table", cards)
 	addToPile(deckId, takenPile, cards+","+HandCard)
 
@@ -231,6 +236,11 @@ func TakeCardsFromTable(c *gin.Context){
 		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
 		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
 	}
+
+	//collecting points --> check if table is empty (table++), calculate and add points in db
+	//finish game --> if deck and hands are empty, check how collected last and give him cards from table if left
+	//            --> check points - if game is finished delete it from db
+	//                             - else return cards to deck and start new round
 
 	c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
 	
