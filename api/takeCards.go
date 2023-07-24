@@ -169,7 +169,7 @@ func TakeCardsFromTable(c *gin.Context){
 	TakenCardsGroups := strings.Split(TakenCardsString, ";")
 	var TakenCards []string
 
-	var valid bool = false
+	var valid bool = true
 
 	//VALIDATE EACH CARDS GROUP
 	for _, group := range TakenCardsGroups{
@@ -202,34 +202,36 @@ func TakeCardsFromTable(c *gin.Context){
 			}	
 		}
 
-		if(isGroupValid(c, HandCard, TakenCards)){
-			valid = true
+		if(!isGroupValid(c, HandCard, TakenCards)){
+			valid = false
 			break
 		}
 
 	}
 
-	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
-	if(valid){
-		drawCardsFromPile(deckId, handPile, HandCard)
-		separator := ","
-		cards := strings.Join(TakenCards, separator)
-		drawCardsFromPile(deckId, "table", cards)
-		addToPile(deckId, takenPile, cards+","+HandCard)
-
-		//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST
-		var game models.Game
-		if(handPile == "hand1"){
-			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", true) 
-			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", false)
-		}else{
-			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
-			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
-		}
-
-		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
-	}else{
+	//IF ONE OF THE CARDS GROUP IS NOT VALID
+	if(!valid){
 		c.JSON(http.StatusNotFound, gin.H{"response": "You can't take chosen cards"})
+		return
 	}
 
+	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
+	drawCardsFromPile(deckId, handPile, HandCard)
+	separator := ","
+	cards := strings.Join(TakenCards, separator)
+	drawCardsFromPile(deckId, "table", cards)
+	addToPile(deckId, takenPile, cards+","+HandCard)
+
+	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST
+	var game models.Game
+	if(handPile == "hand1"){
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", true) 
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", false)
+	}else{
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
+	
 }
