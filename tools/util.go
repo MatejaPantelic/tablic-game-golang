@@ -23,3 +23,14 @@ func JsonParse(response *http.Response, c *gin.Context, parameter interface{}) e
 
 	return errHandUm
 }
+
+func CheckError(code int, c *gin.Context, err error, message string) {
+
+	if err != nil {
+		if message != "" {
+			c.JSON(code, gin.H{"message": message})
+		} else {
+			c.JSON(code, gin.H{"message": err})
+		}
+	}
+}

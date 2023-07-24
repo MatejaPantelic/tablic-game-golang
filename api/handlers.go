@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"main.go/constants"
 	"main.go/initializers"
 	"main.go/models"
@@ -25,16 +26,18 @@ func ShowPlayerCards(c *gin.Context) {
 	//take information for endpoint : deck which user use and name of hand pile for retrieve information from external api
 	result := initializers.DB.Where("user_id = ? AND deck_pile = ?", userid, deckid).Find(&game)
 
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
+	//check error ErrRecordNotFound
+	if result.RowsAffected == 0 {
+		tools.CheckError(http.StatusBadRequest, c, gorm.ErrRecordNotFound, "Result not found in DB!")
+		return
 	}
 
 	//call endpoint for list hand cards with necessary information DECK ID and NAME OF HAND PILE used from variable game
 	respHand, err := http.Get(fmt.Sprintf(constants.LIST_PILE_CARDS_URL, game.DeckPile, game.HandPile))
 
-	//handle if there some error from nttp
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Hand cards is not found!"})
+		tools.CheckError(http.StatusBadRequest, c, err, "Hand cards are not found!")
+		return
 	}
 
 	// declare variable in acceptable format
@@ -45,9 +48,7 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//check parse error
 	if parserror != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Error during parse",
-		})
+		tools.CheckError(http.StatusBadRequest, c, parserror, "Error during parse!")
 		return
 	}
 
@@ -66,7 +67,8 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//handle if there some error from nttp
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Table cards is not found!"})
+		tools.CheckError(http.StatusBadRequest, c, err, "Table cards are not found!")
+		return
 	}
 
 	// declare variable in acceptable format
@@ -76,14 +78,12 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//check parse error
 	if parseerror != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Error during parse",
-		})
+		tools.CheckError(http.StatusBadRequest, c, parseerror, "Error during parse!")
 		return
 	}
 
 	//return response with needed information
-	c.JSON(http.StatusOK, gin.H{"User hand cards": handcardsarray, "Cards from table": drawResponseDeck.Piles.Table})
+	c.JSON(http.StatusOK, gin.H{"User_hand_cards": handcardsarray, "Cards_from_table": drawResponseDeck.Piles.Table})
 }
 
 func NewDeckHandler(c *gin.Context) {
