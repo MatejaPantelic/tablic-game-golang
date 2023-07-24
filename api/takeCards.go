@@ -10,6 +10,7 @@ import (
 	"strings"
 	"strconv"
 	"main.go/constants"
+	"main.go/initializers"
 )
 
 //Function for listing cards in a pile
@@ -215,6 +216,16 @@ func TakeCardsFromTable(c *gin.Context){
 		cards := strings.Join(TakenCards, separator)
 		drawCardsFromPile(deckId, "table", cards)
 		addToPile(deckId, takenPile, cards+","+HandCard)
+
+		//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST
+		var game models.Game
+		if(handPile == "hand1"){
+			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", true) 
+			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", false)
+		}else{
+			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
+			initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
+		}
 
 		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
 	}else{
