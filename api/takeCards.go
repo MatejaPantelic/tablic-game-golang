@@ -78,53 +78,11 @@ type RequestData struct{
 	TakenCards string `json:"taken_cards"`
 }
 
-
-func TakeCardsFromTable(c *gin.Context){
-	//EXTRACT PARAMETERS
-	deckId := c.Param("deckId")
-	handPile := c.Param("handPile")
-	takenPile := c.Param("takenPile")
-
-	//EXTRACT BODY REQUEST
-	var RequestData RequestData
-	err := c.BindJSON(&RequestData)
-	if(err != nil){
-		c.JSON(http.StatusBadRequest, gin.H{"response": "Invalid JSON format in request body"})
-		return
-	}
-	HandCard := strings.ToUpper(RequestData.HandCard)
-	TakenCardsString := strings.ToUpper(RequestData.TakenCards)
-	TakenCards := strings.Split(TakenCardsString, ",")
-
-	//VALIDATE CARD FROM HAND
-	if(!existsInDeck(HandCard)){
-		c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
-		return
-	}
-
-	var HandCards []models.CardList = listPileCards(deckId, handPile)
-
-	if(!existsInPile(HandCard, HandCards)){
-		c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
-		return
-	}
-
-	//VALIDATE CARDS FROM TABLE
-	var TableCards []models.CardList = listPileCards(deckId, "table")
-	for _, cardTaken := range TakenCards {
-		if(!existsInDeck(cardTaken)){
-			c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
-			return
-		}
-		
-		if(!existsInPile(cardTaken, TableCards))	{
-			c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
-			return
-		}	
-	}
+//Function for checking if sum of cards group is same as hand card value
+func isGroupValid(c *gin.Context, HandCard string, TakenCards []string)(valid bool){
+	valid = false
 
 	//CHECK VALUES
-	var valid bool = false
 	var HandCardValue int
 	var sum int = 0
 	var countA int = 0
@@ -176,15 +134,78 @@ func TakeCardsFromTable(c *gin.Context){
 		}
 		sum += val
 	}
+	fmt.Println(HandCardValue)
 
 	//As the sum of each combination differs by 10, we will check countA+1 sums each greater by 10
 	//If modul of any sum by HandCardValue is 0, player can take cards otherwise he can't
 	for i:=0; i<=countA; i++{
 		sum += i*10;
-		if (sum%HandCardValue == 0){
+		if (sum == HandCardValue){
+			valid = true
+			return
+		}
+	}
+
+	return
+}
+
+
+func TakeCardsFromTable(c *gin.Context){
+	//EXTRACT PARAMETERS
+	deckId := c.Param("deckId")
+	handPile := c.Param("handPile")
+	takenPile := c.Param("takenPile")
+
+	//EXTRACT BODY REQUEST
+	var RequestData RequestData
+	err := c.BindJSON(&RequestData)
+	if(err != nil){
+		c.JSON(http.StatusBadRequest, gin.H{"response": "Failed to read body"})
+		return
+	}
+	HandCard := RequestData.HandCard
+	TakenCardsString := RequestData.TakenCards
+	TakenCardsGroups := strings.Split(TakenCardsString, ";")
+	var TakenCards []string
+
+	var valid bool = false
+
+	//VALIDATE EACH CARDS GROUP
+	for _, group := range TakenCardsGroups{
+		TakenCards = strings.Split(group, ",")
+
+		//VALIDATE CARD FROM HAND
+		if(!existsInDeck(HandCard)){
+			c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
+			return
+		}
+
+		var HandCards []models.CardList = listPileCards(deckId, handPile)
+
+		if(!existsInPile(HandCard, HandCards)){
+			c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
+			return
+		}
+
+		//VALIDATE CARDS FROM TABLE
+		var TableCards []models.CardList = listPileCards(deckId, "table")
+		for _, cardTaken := range TakenCards {
+			if(!existsInDeck(cardTaken)){
+				c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
+				return
+			}
+			
+			if(!existsInPile(cardTaken, TableCards))	{
+				c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
+				return
+			}	
+		}
+
+		if(isGroupValid(c, HandCard, TakenCards)){
 			valid = true
 			break
 		}
+
 	}
 
 	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
