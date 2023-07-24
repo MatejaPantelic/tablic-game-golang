@@ -1,9 +1,14 @@
+
 package api
 
-import(
-	"net/http"
+import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
+
+	"main.go/constants"
 	"main.go/models"
 )
 
@@ -43,6 +48,16 @@ func existsInPile(cardCode string, pile []models.CardList)(exist bool){
 		if card.Code == cardCode{
 			exist=true
 		}
+	}
+	return
+}
+
+func getCardsFromPile(deckId string, playerPile string)(cardInPiles models.ListCardResponse){
+	playerCards, _ := http.Get(fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deckId, playerPile))			 
+	body := parseJsonToStruct(playerCards)
+	err := json.Unmarshal(body, &cardInPiles)
+	if err != nil {
+		log.Fatal(err)
 	}
 	return
 }
