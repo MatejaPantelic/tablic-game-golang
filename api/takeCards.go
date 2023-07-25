@@ -217,13 +217,7 @@ func TakeCardsFromTable(c *gin.Context){
 
 	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
 	drawCardsFromPile(deckId, handPile, HandCard)
-	cards := ""
-	for i := 0; i < len(TakenCardsGroups); i++ {
-		cards += TakenCardsGroups[i]
-		if(i < len(TakenCardsGroups)-1){
-			cards += ","
-		}
-	}
+	cards := strings.Join(TakenCardsGroups, ",")
 	drawCardsFromPile(deckId, "table", cards)
 	addToPile(deckId, takenPile, cards+","+HandCard)
 
