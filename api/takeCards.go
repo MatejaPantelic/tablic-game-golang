@@ -74,6 +74,30 @@ func addToPile(deck string, pileName string, cards string){
 
 }
 
+//Function that changes who plays next
+func changeWhoPlaysNext(handPile string, deckId string){
+	var game models.Game
+	if(handPile == "hand1"){
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("first", false) 
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("first", true)
+	}else{
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("first", true) 
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("first", false)
+	}
+}
+
+//Function that changes who collected last
+func changeWhoCollectedLast(handPile string, deckId string){
+	var game models.Game
+	if(handPile == "hand1"){
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", true) 
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", false)
+	}else{
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
+		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
+	}
+}
+
 type RequestData struct{
 	HandCard string `json:"hand_card"`
 	TakenCards string `json:"taken_cards"`
@@ -157,6 +181,18 @@ func TakeCardsFromTable(c *gin.Context){
 	handPile := c.Param("handPile")
 	takenPile := c.Param("takenPile")
 
+	//CHECK IF IT PLAYER'S TURN
+	var game models.Game
+	result := initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Find(&game)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
+	}
+
+	if !game.First{
+		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent plays next."})
+		return
+	}
+
 	//EXTRACT BODY REQUEST
 	var RequestData RequestData
 	err := c.BindJSON(&RequestData)
@@ -221,20 +257,9 @@ func TakeCardsFromTable(c *gin.Context){
 	drawCardsFromPile(deckId, "table", cards)
 	addToPile(deckId, takenPile, cards+","+HandCard)
 
-	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST
-	var game models.Game
-	if(handPile == "hand1"){
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", true) 
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", false)
-	}else{
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
-	}
-
-	//collecting points --> check if table is empty (table++), calculate and add points in db
-	//finish game --> if deck and hands are empty, check how collected last and give him cards from table if left
-	//            --> check points - if game is finished delete it from db
-	//                             - else return cards to deck and start new round
+	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST AND CHANGE WHO PLAYS NEXT
+	changeWhoPlaysNext(handPile, deckId)
+	changeWhoCollectedLast(handPile, deckId)
 
 	c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
 	
