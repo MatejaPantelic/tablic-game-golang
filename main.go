@@ -13,8 +13,12 @@ func init() {
 
 func main() {
 	r := gin.Default()
-	api.InitializeHandlers(r)
 
+	api.InitializeHandlers(r)
+	r.GET("/cards", api.NewDeckHandler)
+	r.GET("/cards/:userid/:deckid", api.ShowPlayerCards)
+	r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", api.TakeCardsFromTable)
+	r.GET("/throwCard/:cardCode/:deckId/:playerPile", api.ThrowCardHandler)
 	r.Run(":8080")
 
 }
