@@ -69,6 +69,7 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 			HandPile:      "hand1",
 			CollectedPile: "taken1",
 			First:         true,
+			CollectedLast: false,
 			UserID:        int(player1.ID),
 			User:          player1,
 		}
@@ -82,6 +83,7 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 			HandPile:      "hand2",
 			CollectedPile: "taken2",
 			First:         false,
+			CollectedLast: false,
 			UserID:        int(player2.ID),
 			User:          player2,
 		}
