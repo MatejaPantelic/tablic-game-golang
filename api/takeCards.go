@@ -252,6 +252,10 @@ func TakeCardsFromTable(c *gin.Context){
 	whoPlaysNext(c, handPile, deckId)
 	changeWhoCollectedLast(c, handPile, deckId)
 
-	c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
+	c.JSON(http.StatusOK, gin.H{
+		"response": "Cards are moved from hand and table pile to taken pile",
+		"user_hand_cards": getCardsFromPile(deckId,handPile).Piles,
+		"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
+	})
 	
 }
