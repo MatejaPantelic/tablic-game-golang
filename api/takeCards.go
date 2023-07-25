@@ -10,6 +10,7 @@ import (
 	"strings"
 	"strconv"
 	"main.go/constants"
+	"main.go/initializers"
 )
 
 //Function for listing cards in a pile
@@ -73,58 +74,31 @@ func addToPile(deck string, pileName string, cards string){
 
 }
 
+//Function that changes who collected last
+func changeWhoCollectedLast(c *gin.Context, handPile string, deckId string){
+	var game models.Game
+	//set attribute "collected_last" on false for player 1
+	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Update("collected_last", true)
+	if result.Error != nil {
+		c.JSON(http.StatusOK, gin.H{"message": result.Error})
+	}
+	//set attribute "collected_last" on true for player 2
+	result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", handPile, deckId).Update("collected_last", false)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
+	}
+}
+
 type RequestData struct{
 	HandCard string `json:"hand_card"`
 	TakenCards string `json:"taken_cards"`
 }
 
-
-func TakeCardsFromTable(c *gin.Context){
-	//EXTRACT PARAMETERS
-	deckId := c.Param("deckId")
-	handPile := c.Param("handPile")
-	takenPile := c.Param("takenPile")
-
-	//EXTRACT BODY REQUEST
-	var RequestData RequestData
-	err := c.BindJSON(&RequestData)
-	if(err != nil){
-		c.JSON(http.StatusBadRequest, gin.H{"response": "Invalid JSON format in request body"})
-		return
-	}
-	HandCard := strings.ToUpper(RequestData.HandCard)
-	TakenCardsString := strings.ToUpper(RequestData.TakenCards)
-	TakenCards := strings.Split(TakenCardsString, ",")
-
-	//VALIDATE CARD FROM HAND
-	if(!existsInDeck(HandCard)){
-		c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
-		return
-	}
-
-	var HandCards []models.CardList = listPileCards(deckId, handPile)
-
-	if(!existsInPile(HandCard, HandCards)){
-		c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
-		return
-	}
-
-	//VALIDATE CARDS FROM TABLE
-	var TableCards []models.CardList = listPileCards(deckId, "table")
-	for _, cardTaken := range TakenCards {
-		if(!existsInDeck(cardTaken)){
-			c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
-			return
-		}
-		
-		if(!existsInPile(cardTaken, TableCards))	{
-			c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
-			return
-		}	
-	}
+//Function for checking if sum of cards group is same as hand card value
+func isGroupValid(c *gin.Context, HandCard string, TakenCards []string)(valid bool){
+	valid = false
 
 	//CHECK VALUES
-	var valid bool = false
 	var HandCardValue int
 	var sum int = 0
 	var countA int = 0
@@ -176,28 +150,112 @@ func TakeCardsFromTable(c *gin.Context){
 		}
 		sum += val
 	}
+	fmt.Println(HandCardValue)
 
 	//As the sum of each combination differs by 10, we will check countA+1 sums each greater by 10
 	//If modul of any sum by HandCardValue is 0, player can take cards otherwise he can't
 	for i:=0; i<=countA; i++{
 		sum += i*10;
-		if (sum%HandCardValue == 0){
+		if (sum == HandCardValue){
 			valid = true
-			break
+			return
 		}
 	}
 
-	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
-	if(valid){
-		drawCardsFromPile(deckId, handPile, HandCard)
-		separator := ","
-		cards := strings.Join(TakenCards, separator)
-		drawCardsFromPile(deckId, "table", cards)
-		addToPile(deckId, takenPile, cards+","+HandCard)
+	return
+}
 
-		c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
-	}else{
-		c.JSON(http.StatusNotFound, gin.H{"response": "You can't take chosen cards"})
+
+func TakeCardsFromTable(c *gin.Context){
+	//EXTRACT PARAMETERS
+	deckId := c.Param("deckId")
+	handPile := c.Param("handPile")
+	takenPile := c.Param("takenPile")
+
+	//CHECK IF IT PLAYER'S TURN
+	var game models.Game
+	result := initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Find(&game)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
 	}
 
+	if !game.First{
+		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent plays next."})
+		return
+	}
+
+	//EXTRACT BODY REQUEST
+	var RequestData RequestData
+	err := c.BindJSON(&RequestData)
+	if(err != nil){
+		c.JSON(http.StatusBadRequest, gin.H{"response": "Failed to read body"})
+		return
+	}
+	HandCard := RequestData.HandCard
+	TakenCardsString := RequestData.TakenCards
+	TakenCardsGroups := strings.Split(TakenCardsString, ";")
+	var TakenCards []string
+
+	var valid bool = true
+
+	//VALIDATE EACH CARDS GROUP
+	for _, group := range TakenCardsGroups{
+		TakenCards = strings.Split(group, ",")
+
+		//VALIDATE CARD FROM HAND
+		if(!existsInDeck(HandCard)){
+			c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
+			return
+		}
+
+		var HandCards []models.CardList = listPileCards(deckId, handPile)
+
+		if(!existsInPile(HandCard, HandCards)){
+			c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
+			return
+		}
+
+		//VALIDATE CARDS FROM TABLE
+		var TableCards []models.CardList = listPileCards(deckId, "table")
+		for _, cardTaken := range TakenCards {
+			if(!existsInDeck(cardTaken)){
+				c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
+				return
+			}
+			
+			if(!existsInPile(cardTaken, TableCards))	{
+				c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
+				return
+			}	
+		}
+
+		if(!isGroupValid(c, HandCard, TakenCards)){
+			valid = false
+			break
+		}
+
+	}
+
+	//IF ONE OF THE CARDS GROUP IS NOT VALID
+	if(!valid){
+		c.JSON(http.StatusNotFound, gin.H{"response": "You can't take chosen cards"})
+		return
+	}
+
+	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
+	drawCardsFromPile(deckId, handPile, HandCard)
+	cards := strings.Join(TakenCardsGroups, ",")
+	drawCardsFromPile(deckId, "table", cards)
+	addToPile(deckId, takenPile, cards+","+HandCard)
+
+	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST AND CHANGE WHO PLAYS NEXT
+	whoPlaysNext(c, handPile, deckId)
+	changeWhoCollectedLast(c, handPile, deckId)
+
+	c.JSON(http.StatusOK, gin.H{
+		"response": "Cards are moved from hand and table pile to taken pile",
+		"user_hand_cards": getCardsFromPile(deckId,handPile).Piles,
+		"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
+	})
+	
 }
