@@ -257,5 +257,8 @@ func TakeCardsFromTable(c *gin.Context){
 		"user_hand_cards": getCardsFromPile(deckId,handPile).Piles,
 		"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
 	})
+
+	Score(deckId, takenPile, cards + "," + HandCard, true)
+	FinishGame(c, deckId)
 	
 }

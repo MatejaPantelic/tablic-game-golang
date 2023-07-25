@@ -43,6 +43,8 @@ func ThrowCardHandler(c *gin.Context) {
 				// create variable type of structure Game
 				whoPlaysNext(c, playerPile, deckId)
 
+				FinishGame(c, deckId)
+
 			} else {
 				c.JSON(http.StatusOK, gin.H{"response": "The selected card is not in your hand."})
 			}
