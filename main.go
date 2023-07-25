@@ -19,6 +19,6 @@ func main() {
 	r.GET("/cards/:userid/:deckid", api.ShowPlayerCards)
 	r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", api.TakeCardsFromTable)
 	r.GET("/throwCard/:cardCode/:deckId/:playerPile", api.ThrowCardHandler)
-	r.Run(":8080")
+	r.Run()
 
 }

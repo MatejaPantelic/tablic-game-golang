@@ -53,6 +53,7 @@ func FinishGame(c *gin.Context, deckId string){
 	if(!emptyDeck(deckId, "hand1")){
 		createPile("6", deckId, "hand1", c)
 		createPile("6", deckId, "hand2", c)
+		return
 	}
 
 	//If deck is empty round is over
@@ -86,15 +87,15 @@ func FinishGame(c *gin.Context, deckId string){
 		//update points
 		if(playerMoreCards != "equal"){
 			var game models.Game
-			err := initializers.DB.Where("deckPile = ? and  collectedPile = ?", deckId, playerMoreCards).Find(&game).Error
+			err := initializers.DB.Where("deck_pile = ? and  collected_pile = ?", deckId, playerMoreCards).Find(&game).Error
 			if err != nil {
 				log.Fatal("Can't find game")
 			}
 
 			game.Score += 3
 
-			err = initializers.DB.Save(&game).Error
-			if err != nil {
+			result := initializers.DB.Model(&game).Where("collected_pile = ? AND deck_pile = ?", game.CollectedPile, deckId).Update("score", game.Score)
+			if result.Error != nil {
 				log.Fatal("Error updating score")
 			}
 		}
@@ -119,12 +120,12 @@ func FinishGame(c *gin.Context, deckId string){
 	}
 
 	if(end){
-		for _,game := range games{
-			result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", game.HandPile, deckId).Update("game_finished", true)
+		// for _,game := range games{
+			result :=initializers.DB.Model(&game).Where("deck_pile = ?", deckId).Update("game_finished", true)
 			if result.Error != nil {
 				c.JSON(http.StatusOK, gin.H{"message": result.Error})
 			}
-		}
+		// }
 		return
 	}
 
