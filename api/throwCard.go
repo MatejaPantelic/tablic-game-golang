@@ -42,17 +42,7 @@ func ThrowCardHandler(c *gin.Context) {
 				})
 				// create variable type of structure Game
 				var game models.Game
-				
-				//set attribute "first" on false for player 1
-				result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", playerPile, deckId).Update("first", false)
-				if result.Error != nil {
-					c.JSON(http.StatusOK, gin.H{"message": result.Error})
-				}
-				//set attribute "first" on true for player 2
-				result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", playerPile, deckId).Update("first", true)
-				if result.Error != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-				}
+				whoPlaysNext(c ,game,playerPile, deckId)
 
 			} else {
 				c.JSON(http.StatusOK, gin.H{"response": "The selected card is not in your hand."})

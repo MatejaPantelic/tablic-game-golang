@@ -7,9 +7,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-
+	"main.go/initializers"
 	"main.go/constants"
 	"main.go/models"
+	"github.com/gin-gonic/gin"
 )
 
 //Function for parsing response JSON to Struct
@@ -60,4 +61,17 @@ func getCardsFromPile(deckId string, playerPile string)(cardInPiles models.ListC
 		log.Fatal(err)
 	}
 	return
+}
+
+func whoPlaysNext(c *gin.Context, game models.Game, playerPile string, deckId string){
+	//set attribute "first" on false for player 1
+	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", playerPile, deckId).Update("first", false)
+	if result.Error != nil {
+		c.JSON(http.StatusOK, gin.H{"message": result.Error})
+	}
+	//set attribute "first" on true for player 2
+	result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", playerPile, deckId).Update("first", true)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
+	}
 }
