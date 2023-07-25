@@ -74,27 +74,18 @@ func addToPile(deck string, pileName string, cards string){
 
 }
 
-//Function that changes who plays next
-func changeWhoPlaysNext(handPile string, deckId string){
-	var game models.Game
-	if(handPile == "hand1"){
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("first", false) 
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("first", true)
-	}else{
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("first", true) 
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("first", false)
-	}
-}
-
 //Function that changes who collected last
-func changeWhoCollectedLast(handPile string, deckId string){
+func changeWhoCollectedLast(c *gin.Context, handPile string, deckId string){
 	var game models.Game
-	if(handPile == "hand1"){
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", true) 
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", false)
-	}else{
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand1").Update("collected_last", false)
-		initializers.DB.Model(&game).Where("deck_pile = ? AND hand_pile = ?", deckId, "hand2").Update("collected_last", true)
+	//set attribute "collected_last" on false for player 1
+	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Update("collected_last", true)
+	if result.Error != nil {
+		c.JSON(http.StatusOK, gin.H{"message": result.Error})
+	}
+	//set attribute "collected_last" on true for player 2
+	result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", handPile, deckId).Update("collected_last", false)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
 	}
 }
 
@@ -258,8 +249,8 @@ func TakeCardsFromTable(c *gin.Context){
 	addToPile(deckId, takenPile, cards+","+HandCard)
 
 	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST AND CHANGE WHO PLAYS NEXT
-	changeWhoPlaysNext(handPile, deckId)
-	changeWhoCollectedLast(handPile, deckId)
+	whoPlaysNext(c, handPile, deckId)
+	changeWhoCollectedLast(c, handPile, deckId)
 
 	c.JSON(http.StatusOK, gin.H{"response": "Cards are moved from hand and table pile to taken pile"})
 	

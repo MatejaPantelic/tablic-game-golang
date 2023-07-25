@@ -63,7 +63,8 @@ func getCardsFromPile(deckId string, playerPile string)(cardInPiles models.ListC
 	return
 }
 
-func whoPlaysNext(c *gin.Context, game models.Game, playerPile string, deckId string){
+func whoPlaysNext(c *gin.Context, playerPile string, deckId string){
+	var game models.Game
 	//set attribute "first" on false for player 1
 	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", playerPile, deckId).Update("first", false)
 	if result.Error != nil {

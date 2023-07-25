@@ -41,8 +41,7 @@ func ThrowCardHandler(c *gin.Context) {
 					"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
 				})
 				// create variable type of structure Game
-				var game models.Game
-				whoPlaysNext(c ,game,playerPile, deckId)
+				whoPlaysNext(c, playerPile, deckId)
 
 			} else {
 				c.JSON(http.StatusOK, gin.H{"response": "The selected card is not in your hand."})
