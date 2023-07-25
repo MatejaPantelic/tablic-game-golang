@@ -17,8 +17,8 @@ import (
 func ShowPlayerCards(c *gin.Context) {
 	//function recieve two parameter from endpoint for list card for player and table----USER ID AND DECK ID
 	//we use Deck ID for recognition game of player
-	userid := c.Param("userid")
-	deckid := c.Param("deckid")
+	userid := c.Param("userId")
+	deckid := c.Param("deckId")
 
 	// create variable type of structure Game to store data from database
 	var game models.Game
