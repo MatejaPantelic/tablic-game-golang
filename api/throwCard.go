@@ -3,11 +3,11 @@ package api
 import (
 	"fmt"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"main.go/constants"
 	"main.go/initializers"
 	"main.go/models"
+	"main.go/tools"
 )
 
 func ThrowCardHandler(c *gin.Context) {
@@ -18,18 +18,16 @@ func ThrowCardHandler(c *gin.Context) {
 	// create variable type of structure Game
 	var game models.Game
 	result := initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", playerPile, deckId).Find(&game)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-	}
+	tools.ErrorCheck(result.Error, 400, "Failed to fetch data from DB",c)
 	//checking if it is the player's turn to play
 	if game.First{
-		var exist bool = existsInDeck(cardCode) 
+		var exist bool = tools.ExistsInDeck(cardCode) 
 		//checking if card exist in deck
 		if exist {
 			//list of cards in a player hand pile
-			cardInPiles := getCardsFromPile(deckId,playerPile)
+			var HandCards []models.CardList = tools.ListPileCards(deckId, playerPile,c)
+			existInHand := tools.ExistsInPile(cardCode, HandCards)
 
-			existInHand := isCardInHand(playerPile, cardInPiles, cardCode)
 			//checking if the card is in the player's hand
 			if existInHand {
 				//adding card to table pile
@@ -37,11 +35,11 @@ func ThrowCardHandler(c *gin.Context) {
 				existInHand = false
 				c.JSON(http.StatusOK, gin.H{
 					"message": "The card is thrown on the table", 
-					"user_hand_cards": getCardsFromPile(deckId,playerPile).Piles,
-					"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
+					"user_hand_cards": tools.ListPileCards(deckId, playerPile, c), 
+					"table_cards": tools.ListPileCards(deckId, "table", c),
 				})
 				// create variable type of structure Game
-				whoPlaysNext(c, playerPile, deckId)
+				tools.WhoPlaysNext(c, playerPile, deckId)
 
 				FinishGame(c, deckId)
 
@@ -55,26 +53,4 @@ func ThrowCardHandler(c *gin.Context) {
 	}else{
 		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent play next."})
 	}
-
-	
-	
-
-} //Function for checking if cards exists in the player's hand
-func isCardInHand(playerPile string, cardInPiles models.ListCardResponse, cardCode string) bool {
-	if playerPile == "hand1" {
-		size := len(cardInPiles.Piles.Hand1.Cards)
-		for i := 0; i < size; i++ {
-			if cardInPiles.Piles.Hand1.Cards[i].Code == cardCode {
-				return true
-			}
-		}
-	} else if playerPile == "hand2" {
-		size := len(cardInPiles.Piles.Hand2.Cards)
-		for i := 0; i < size; i++ {
-			if cardInPiles.Piles.Hand2.Cards[i].Code == cardCode {
-				return true
-			}
-		}
-	}
-	return false
-}
+} 
