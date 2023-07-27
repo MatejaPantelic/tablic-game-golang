@@ -3,62 +3,23 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"main.go/models"
-	"encoding/json"
 	"net/http"
-	"fmt"
 	"strings"
 	"strconv"
-	"main.go/constants"
 	"main.go/initializers"
+	"main.go/tools"
 )
-
-//Function for listing cards in a pile
-func listPileCards(deck string, pileName string, c *gin.Context)(CardsArray []models.CardList){
-	listPileCardsURL := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deck, pileName)
-	resp, errURL := http.Get(listPileCardsURL)
-	errorCheck(errURL,500,"Faile API call - List pile cards",c)
-	defer resp.Body.Close()
-
-	body := parseJsonToStruct(resp,c) 
-
-	var ListCardResponse models.ListCardResponse
-	err := json.Unmarshal(body, &ListCardResponse)
-	errorCheck(err,400,"Faile to fetch data from API",c)
-
-	switch(pileName){
-	 case "hand1": CardsArray = ListCardResponse.Piles.Hand1.Cards
-	 case "hand2": CardsArray = ListCardResponse.Piles.Hand2.Cards
-	 case "table": CardsArray = ListCardResponse.Piles.Table.Cards
-	 default: 
-	}
-
-	return
-}
-
-//Function for drawing cards from a pile
-func drawCardsFromPile(deck string, pileName string, cards string, c *gin.Context){
-	drawCardsFromPileURL := fmt.Sprintf(constants.DRAW_CARDS_FROM_PILE_URL, deck, pileName, cards)
-	resp, errURL := http.Get(drawCardsFromPileURL)
-	errorCheck(errURL,500,"Faile API call - Draw cards from pile",c)
-	defer resp.Body.Close()
-
-	body := parseJsonToStruct(resp,c) 
-
-	var DrowCardResponse models.DrawingFromPilesResponse
-	err := json.Unmarshal(body, &DrowCardResponse)
-	errorCheck(err,400,"Faile to fetch data from API",c)
-}
 
 //Function that changes who collected last
 func changeWhoCollectedLast(c *gin.Context, handPile string, deckId string){
 	var game models.Game
 	//set attribute "collected_last" on false for player 1
 	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Update("collected_last", true)
-	errorCheck(result.Error,400,"Failed DB update",c)
+	tools.ErrorCheck(result.Error,400,"Failed DB update",c)
 
 	//set attribute "collected_last" on true for player 2
 	result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", handPile, deckId).Update("collected_last", false)
-	errorCheck(result.Error,400,"Failed DB update",c)
+	tools.ErrorCheck(result.Error,400,"Failed DB update",c)
 }
 
 type RequestData struct{
@@ -146,7 +107,7 @@ func TakeCardsFromTable(c *gin.Context){
 	//CHECK IF IT PLAYER'S TURN
 	var game models.Game
 	result := initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Find(&game)
-	errorCheck(result.Error,400,"Failed to find game",c)
+	tools.ErrorCheck(result.Error,400,"Failed to find game",c)
 
 	if !game.First{
 		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent plays next."})
@@ -156,7 +117,7 @@ func TakeCardsFromTable(c *gin.Context){
 	//EXTRACT BODY REQUEST
 	var RequestData RequestData
 	err := c.BindJSON(&RequestData)
-	errorCheck(err,400,"Failed to read body",c)
+	tools.ErrorCheck(err,400,"Failed to read body",c)
 
 	HandCard := RequestData.HandCard
 	TakenCardsString := RequestData.TakenCards
@@ -170,27 +131,27 @@ func TakeCardsFromTable(c *gin.Context){
 		TakenCards = strings.Split(group, ",")
 		
 		//VALIDATE CARD FROM HAND
-		if(!existsInDeck(HandCard)){
+		if(!tools.ExistsInDeck(HandCard)){
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
 			return
 		}
 
-		var HandCards []models.CardList = listPileCards(deckId, handPile,c)
+		var HandCards []models.CardList = tools.ListPileCards(deckId, handPile,c)
 
-		if(!existsInPile(HandCard, HandCards)){
+		if(!tools.ExistsInPile(HandCard, HandCards)){
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
 			return
 		}
 
 		//VALIDATE CARDS FROM TABLE
-		var TableCards []models.CardList = listPileCards(deckId, "table",c)
+		var TableCards []models.CardList = tools.ListPileCards(deckId, "table",c)
 		for _, cardTaken := range TakenCards {
-			if(!existsInDeck(cardTaken)){
+			if(!tools.ExistsInDeck(cardTaken)){
 				c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
 				return
 			}
 			
-			if(!existsInPile(cardTaken, TableCards))	{
+			if(!tools.ExistsInPile(cardTaken, TableCards))	{
 				c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
 				return
 			}	
@@ -210,19 +171,19 @@ func TakeCardsFromTable(c *gin.Context){
 	}
 
 	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
-	drawCardsFromPile(deckId, handPile, HandCard,c)
+	tools.DrawCardsFromPile(deckId, handPile, HandCard,c)
 	cards := strings.Join(TakenCardsGroups, ",")
-	drawCardsFromPile(deckId, "table", cards,c)
-	addToPile(deckId, takenPile, cards+","+HandCard,c)
+	tools.DrawCardsFromPile(deckId, "table", cards,c)
+	tools.AddToPile(deckId, takenPile, cards+","+HandCard,c)
 
 	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST AND CHANGE WHO PLAYS NEXT
-	whoPlaysNext(c, handPile, deckId)
+	tools.WhoPlaysNext(c, handPile, deckId)
 	changeWhoCollectedLast(c, handPile, deckId)
 
 	c.JSON(http.StatusOK, gin.H{
 		"response": "Cards are moved from hand and table pile to taken pile",
-		"user_hand_cards": getCardsFromPile(deckId,handPile,c).Piles,
-		"table_cards": getCardsFromPile(deckId,"table",c).Piles.Table,
+		"user_hand_cards": tools.GetCardsFromPile(deckId,handPile,c).Piles, 
+		"table_cards": tools.GetCardsFromPile(deckId,"table",c).Piles.Table, 
 	})
 
 	Score(deckId, takenPile, cards + "," + HandCard, true,c)

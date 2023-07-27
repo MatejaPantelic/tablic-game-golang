@@ -7,6 +7,7 @@ import (
 	"main.go/constants"
 	"main.go/initializers"
 	"main.go/models"
+	"main.go/tools"
 )
 
 // Making the queue where player will be stored until game starts
@@ -19,10 +20,10 @@ func AddPlayerHandler(c *gin.Context) {
 	var newUser models.User
 
 	err := c.BindJSON(&newUser)
-	errorCheck(err, 400, "Invalid user data", c)
+	tools.ErrorCheck(err, 400, "Invalid user data", c)
 
 	result := initializers.DB.Create(&newUser)
-	errorCheck(result.Error, http.StatusBadRequest, "Failed to create user", c)
+	tools.ErrorCheck(result.Error, http.StatusBadRequest, "Failed to create user", c)
 
 	queue = append(queue, newUser)
 	if len(queue) >= 2 {
@@ -39,7 +40,7 @@ func AddPlayerHandler(c *gin.Context) {
 func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 	// Deck creation/alocation
 	response, err := http.Get(constants.NEW_SHUFFLED_DECK)
-	errorCheck(err, http.StatusBadRequest, "Error starting the game-failed to fetch deck", c)
+	tools.ErrorCheck(err, http.StatusBadRequest, "Error starting the game-failed to fetch deck", c)
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusOK {
@@ -48,7 +49,7 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 		}
 
 		err = json.NewDecoder(response.Body).Decode(&deckResponse)
-		errorCheck(err, http.StatusBadGateway, "Failed to fetch deckID", c)
+		tools.ErrorCheck(err, http.StatusBadGateway, "Failed to fetch deckID", c)
 
 		//Game creation
 		newGame := models.Game{
@@ -63,7 +64,7 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 			User:          player1,
 		}
 		result := initializers.DB.Create(&newGame)
-		errorCheck(result.Error, 500, "Failed to add first player into DB ", c)
+		tools.ErrorCheck(result.Error, 500, "Failed to add first player into DB ", c)
 
 		newGame2 := models.Game{
 			Score:         0,
@@ -77,19 +78,19 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 			User:          player2,
 		}
 		result2 := initializers.DB.Create(&newGame2)
-        errorCheck(result2.Error, 500, "Failed to add second player into DB ", c)
+        tools.ErrorCheck(result2.Error, 500, "Failed to add second player into DB ", c)
 
 		c.JSON(201, gin.H{"message": "Game has started", "game1": newGame, "game2": newGame2})
 		
 
 		//Taking 6 cards from deck and forming cards for player1 hands
-		createPile("6", deckResponse.DeckID, newGame.HandPile, c)
+		tools.CreatePile("6", deckResponse.DeckID, newGame.HandPile, c)
 
 		//Taking 6 cards from deck and forming cards for player2 hands
-		createPile("6", deckResponse.DeckID, newGame2.HandPile, c)
+		tools.CreatePile("6", deckResponse.DeckID, newGame2.HandPile, c)
 
 		//Taking 4 cards from deck and forming cards for table
-		createPile("4", deckResponse.DeckID, newGame.TablePile, c)
+		tools.CreatePile("4", deckResponse.DeckID, newGame.TablePile, c)
 
 	} else {
 		c.JSON(500, gin.H{"message": "Error starting game"})

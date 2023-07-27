@@ -8,6 +8,7 @@ import (
 	"strings"
 	"main.go/constants"
 	"main.go/initializers"
+	"main.go/tools"
 )
 
 
@@ -15,15 +16,15 @@ import (
 func returnCardsToDeck(deckId string, c *gin.Context){
 	retunToDeckURL := fmt.Sprintf(constants.RETURN_TO_DECK_URL, deckId)
 	_, errURL := http.Get(retunToDeckURL)
-	errorCheck(errURL, 400, "Failed API call-Return to deck",c)
+	tools.ErrorCheck(errURL, 400, "Failed API call-Return to deck",c)
 }
 
 func numberOfCards(deckId string, c *gin.Context) string {
 
-	Player1TakenPile := Piles(deckId, "taken1",c)
+	Player1TakenPile := tools.Piles(deckId, "taken1",c)
 	remainingPlayer1 := Player1TakenPile.Remaining
 
-	Player2TakenPile := Piles(deckId, "taken2",c)
+	Player2TakenPile := tools.Piles(deckId, "taken2",c)
 	remainingPlayer2 := Player2TakenPile.Remaining
 
 	if remainingPlayer1 > remainingPlayer2 {
@@ -39,39 +40,39 @@ func FinishGame(c *gin.Context, deckId string){
 
 	//Check if player's hands are empty
 	//If one of hands is not empty round can continue
-	if(notEmptyHands(deckId,c)){
+	if(tools.NotEmptyHands(deckId,c)){
 		c.JSON(http.StatusOK, gin.H{"message": "You can continue round - next player's on turn"})
 		return
 	}
 
 	//Check if deck is empty
 	//If it isn't empty draw draw 2x6 cards from deck to player's hands
-	if(!emptyDeck(deckId, "hand1",c)){
-		createPile("6", deckId, "hand1", c)
-		createPile("6", deckId, "hand2", c)
+	if(!tools.EmptyDeck(deckId, "hand1",c)){
+		tools.CreatePile("6", deckId, "hand1", c)
+		tools.CreatePile("6", deckId, "hand2", c)
 		return
 	}
 
 	//If deck is empty round is over
 	//Check if table is empty
-	if(!emptyTable(deckId,c)){
+	if(!tools.EmptyTable(deckId,c)){
 		//Draw cards from table
-		cardsList := listPileCards(deckId, "table",c)
+		cardsList := tools.ListPileCards(deckId, "table",c)
 		cards := make([]string, 0)
 		for _,card := range cardsList{
 			cards = append(cards, card.Code)
 		}
 		cardsString := strings.Join(cards, ",")
-		drawCardsFromPile(deckId, "table", cardsString,c)
+		tools.DrawCardsFromPile(deckId, "table", cardsString,c)
 
 		//Check who collected last
 		var game models.Game
 		result := initializers.DB.Model(&game).Where("deck_pile = ? AND collected_last = true", deckId).Find(&game)
-		errorCheck(result.Error, 400, "Failed to fetch DB data",c)
+		tools.ErrorCheck(result.Error, 400, "Failed to fetch DB data",c)
 		
 
 		//Add to taken pile of the player who collected last
-		addToPile(deckId, game.CollectedPile, cardsString,c)
+		tools.AddToPile(deckId, game.CollectedPile, cardsString,c)
 		
 		//Update points
 		Score(deckId, game.CollectedPile, cardsString, false,c)
@@ -83,12 +84,12 @@ func FinishGame(c *gin.Context, deckId string){
 		if(playerMoreCards != "equal"){
 			var game models.Game
 			err := initializers.DB.Where("deck_pile = ? and  collected_pile = ?", deckId, playerMoreCards).Find(&game).Error
-			errorCheck(err, 400, "Can't find game",c)
+			tools.ErrorCheck(err, 400, "Can't find game",c)
 
 			game.Score += 3
 
 			result := initializers.DB.Model(&game).Where("collected_pile = ? AND deck_pile = ?", game.CollectedPile, deckId).Update("score", game.Score)
-			errorCheck(result.Error, 400, "Error updating score",c)
+			tools.ErrorCheck(result.Error, 400, "Error updating score",c)
 		}
 		
 	}
@@ -98,7 +99,7 @@ func FinishGame(c *gin.Context, deckId string){
 	var game models.Game
 	var games []models.Game
 	result := initializers.DB.Model(&game).Where("deck_pile = ? AND collected_last = true", deckId).Find(&games)
-	errorCheck(result.Error, 400, "Failed to fetch data from DB",c)
+	tools.ErrorCheck(result.Error, 400, "Failed to fetch data from DB",c)
 
 	end := false
 	for _,game := range games{
@@ -110,14 +111,14 @@ func FinishGame(c *gin.Context, deckId string){
 
 	if(end){
 		result :=initializers.DB.Model(&game).Where("deck_pile = ?", deckId).Update("game_finished", true)
-		errorCheck(result.Error, 400, "Failed to finish game",c)
+		tools.ErrorCheck(result.Error, 400, "Failed to finish game",c)
 		return
 	}
 
 	//If game is not finshed - create new round
 	//Move all cards from piles to deck
 	returnCardsToDeck(deckId,c)
-	createPile("6", deckId, "hand1", c)
-	createPile("6", deckId, "hand2", c)
-	createPile("4", deckId, "table", c)
+	tools.CreatePile("6", deckId, "hand1", c)
+	tools.CreatePile("6", deckId, "hand2", c)
+	tools.CreatePile("4", deckId, "table", c)
 }
