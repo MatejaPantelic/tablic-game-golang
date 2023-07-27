@@ -21,7 +21,7 @@ func Score(deckId string, takenPile string, cards string, table bool, c *gin.Con
 		newScore += calculateCardPoints(code)
 	}
 
-	if(table && emptyTable(deckId)){
+	if(table && emptyTable(deckId,c)){
 		newScore++
 	}
 

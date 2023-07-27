@@ -13,26 +13,25 @@ import (
 
 
 func returnCardsToDeck(deckId string, c *gin.Context){
-	url := fmt.Sprintf(constants.RETURN_TO_DECK_URL, deckId)
-	_, errURL := http.Get(url)
+	retunToDeckURL := fmt.Sprintf(constants.RETURN_TO_DECK_URL, deckId)
+	_, errURL := http.Get(retunToDeckURL)
 	errorCheck(errURL, 400, "Failed API call-Return to deck",c)
 }
 
-func numberOfCards(deckId string) string {
+func numberOfCards(deckId string, c *gin.Context) string {
 
-	Player1TakenPile := Piles(deckId, "taken1")
+	Player1TakenPile := Piles(deckId, "taken1",c)
 	remainingPlayer1 := Player1TakenPile.Remaining
 
-	Player2TakenPile := Piles(deckId, "taken2")
+	Player2TakenPile := Piles(deckId, "taken2",c)
 	remainingPlayer2 := Player2TakenPile.Remaining
 
 	if remainingPlayer1 > remainingPlayer2 {
 		return "taken1"
 	} else if remainingPlayer1 == remainingPlayer2 {
 		return "equal"
-	} else {
-		return "taken2"
-	}
+	} 
+	return "taken2"
 
 }
 
@@ -40,14 +39,14 @@ func FinishGame(c *gin.Context, deckId string){
 
 	//Check if player's hands are empty
 	//If one of hands is not empty round can continue
-	if(notEmptyHands(deckId)){
+	if(notEmptyHands(deckId,c)){
 		c.JSON(http.StatusOK, gin.H{"message": "You can continue round - next player's on turn"})
 		return
 	}
 
 	//Check if deck is empty
 	//If it isn't empty draw draw 2x6 cards from deck to player's hands
-	if(!emptyDeck(deckId, "hand1")){
+	if(!emptyDeck(deckId, "hand1",c)){
 		createPile("6", deckId, "hand1", c)
 		createPile("6", deckId, "hand2", c)
 		return
@@ -55,7 +54,7 @@ func FinishGame(c *gin.Context, deckId string){
 
 	//If deck is empty round is over
 	//Check if table is empty
-	if(!emptyTable(deckId)){
+	if(!emptyTable(deckId,c)){
 		//Draw cards from table
 		cardsList := listPileCards(deckId, "table",c)
 		cards := make([]string, 0)
@@ -78,7 +77,7 @@ func FinishGame(c *gin.Context, deckId string){
 		Score(deckId, game.CollectedPile, cardsString, false,c)
 
 		//Check who has more cards
-		playerMoreCards := numberOfCards(deckId)
+		playerMoreCards := numberOfCards(deckId,c)
 
 		//update points
 		if(playerMoreCards != "equal"){

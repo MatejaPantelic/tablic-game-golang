@@ -25,7 +25,7 @@ func ThrowCardHandler(c *gin.Context) {
 		//checking if card exist in deck
 		if exist {
 			//list of cards in a player hand pile
-			cardInPiles := getCardsFromPile(deckId,playerPile)
+			cardInPiles := getCardsFromPile(deckId,playerPile,c)
 
 			existInHand := isCardInHand(playerPile, cardInPiles, cardCode)
 			//checking if the card is in the player's hand
@@ -35,8 +35,8 @@ func ThrowCardHandler(c *gin.Context) {
 				existInHand = false
 				c.JSON(http.StatusOK, gin.H{
 					"message": "The card is thrown on the table", 
-					"user_hand_cards": getCardsFromPile(deckId,playerPile).Piles,
-					"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
+					"user_hand_cards": getCardsFromPile(deckId,playerPile,c).Piles,
+					"table_cards": getCardsFromPile(deckId,"table",c).Piles.Table,
 				})
 				// create variable type of structure Game
 				whoPlaysNext(c, playerPile, deckId)

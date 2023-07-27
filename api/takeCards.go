@@ -17,8 +17,9 @@ func listPileCards(deck string, pileName string, c *gin.Context)(CardsArray []mo
 	listPileCardsURL := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deck, pileName)
 	resp, errURL := http.Get(listPileCardsURL)
 	errorCheck(errURL,500,"Faile API call - List pile cards",c)
+	defer resp.Body.Close()
 
-	body := parseJsonToStruct(resp) 
+	body := parseJsonToStruct(resp,c) 
 
 	var ListCardResponse models.ListCardResponse
 	err := json.Unmarshal(body, &ListCardResponse)
@@ -39,8 +40,9 @@ func drawCardsFromPile(deck string, pileName string, cards string, c *gin.Contex
 	drawCardsFromPileURL := fmt.Sprintf(constants.DRAW_CARDS_FROM_PILE_URL, deck, pileName, cards)
 	resp, errURL := http.Get(drawCardsFromPileURL)
 	errorCheck(errURL,500,"Faile API call - Draw cards from pile",c)
+	defer resp.Body.Close()
 
-	body := parseJsonToStruct(resp) 
+	body := parseJsonToStruct(resp,c) 
 
 	var DrowCardResponse models.DrawingFromPilesResponse
 	err := json.Unmarshal(body, &DrowCardResponse)
@@ -219,8 +221,8 @@ func TakeCardsFromTable(c *gin.Context){
 
 	c.JSON(http.StatusOK, gin.H{
 		"response": "Cards are moved from hand and table pile to taken pile",
-		"user_hand_cards": getCardsFromPile(deckId,handPile).Piles,
-		"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
+		"user_hand_cards": getCardsFromPile(deckId,handPile,c).Piles,
+		"table_cards": getCardsFromPile(deckId,"table",c).Piles.Table,
 	})
 
 	Score(deckId, takenPile, cards + "," + HandCard, true,c)

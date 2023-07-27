@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"main.go/initializers"
 	"main.go/constants"
@@ -14,13 +13,11 @@ import (
 )
 
 //Function for parsing response JSON to Struct
-func parseJsonToStruct(resp *http.Response)(body []byte){
+func parseJsonToStruct(resp *http.Response, c *gin.Context)(body []byte){
 	defer resp.Body.Close()
 
 	body, errBody := io.ReadAll(resp.Body)
-	if errBody != nil {
-		log.Fatal(errBody)
-	}
+	errorCheck(errBody,400,"Failed to parse data",c)
 
 	return
 }
@@ -108,13 +105,12 @@ func existsInPile(cardCode string, pile []models.CardList)(exist bool){
 	return
 }
 
-func getCardsFromPile(deckId string, playerPile string)(cardInPiles models.ListCardResponse){
+func getCardsFromPile(deckId string, playerPile string, c *gin.Context)(cardInPiles models.ListCardResponse){
 	playerCards, _ := http.Get(fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deckId, playerPile))			 
-	body := parseJsonToStruct(playerCards)
+	body := parseJsonToStruct(playerCards, c)
 	err := json.Unmarshal(body, &cardInPiles)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errorCheck(err, 400, "Failed to fetch data from API", c)
+	defer playerCards.Body.Close()
 	return
 }
 
@@ -122,19 +118,16 @@ func whoPlaysNext(c *gin.Context, playerPile string, deckId string){
 	var game models.Game
 	//set attribute "first" on false for player 1
 	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", playerPile, deckId).Update("first", false)
-	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{"message": result.Error})
-	}
+	errorCheck(result.Error, 500, "Failed to update DB", c)
+
 	//set attribute "first" on true for player 2
 	result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", playerPile, deckId).Update("first", true)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-	}
+	errorCheck( result.Error, 500, "Failed to update DB", c)
 }
 
-func Piles(deckId string, pile string) models.PileList {
+func Piles(deckId string, pile string, c *gin.Context) models.PileList {
 
-	var listCardResponse = listCardResponseFunction(deckId, pile)
+	var listCardResponse = listCardResponseFunction(deckId, pile,c)
 	var Pile models.PileList
 
 	if pile == "taken1" {
@@ -151,12 +144,12 @@ func Piles(deckId string, pile string) models.PileList {
 	return Pile
 }
 
-func notEmptyHands(deckId string) bool {
+func notEmptyHands(deckId string, c *gin.Context) bool {
 
-	var Pile1 models.PileList = Piles(deckId, "hand1")
+	var Pile1 models.PileList = Piles(deckId, "hand1",c)
 	remaining1 := Pile1.Remaining
 
-	var Pile2 models.PileList = Piles(deckId, "hand2")
+	var Pile2 models.PileList = Piles(deckId, "hand2",c)
 	remaining2 := Pile2.Remaining
 
 	if remaining1 != 0 && remaining2 != 0 {
@@ -165,32 +158,25 @@ func notEmptyHands(deckId string) bool {
 	return false
 }
 
-func listCardResponseFunction(deckId string, pile string) models.ListCardResponse {
-	url := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deckId, pile)
+func listCardResponseFunction(deckId string, pile string, c *gin.Context) models.ListCardResponse {
+	listPileCardsURL := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deckId, pile)
 
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal("Issue with specified URL")
-	}
+	resp, err := http.Get(listPileCardsURL)
+	errorCheck( err, 404, "Issue with specified URL", c)
 
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal("Error during reading response!")
-	}
-
+	errorCheck( err, 500, "Error during reading response!", c)
+	
 	var listCardResponse models.ListCardResponse
 	err = json.Unmarshal(body, &listCardResponse)
-
-	if err != nil {
-		log.Fatal("Failed to read body")
-	}
+	errorCheck( err, 500, "Failed to read body", c)
 
 	return listCardResponse
 }
 
-func emptyDeck(deckId string, pile string) bool {
-	var listCardResponse = listCardResponseFunction(deckId, pile)
+func emptyDeck(deckId string, pile string, c *gin.Context) bool {
+	var listCardResponse = listCardResponseFunction(deckId, pile,c)
 	remaining := listCardResponse.Remaining
 
 	if remaining == 0 {
@@ -199,8 +185,8 @@ func emptyDeck(deckId string, pile string) bool {
 	return false
 }
 
-func emptyTable(deckId string) bool {
-	TablePile := Piles(deckId, "table")
+func emptyTable(deckId string, c *gin.Context) bool {
+	TablePile := Piles(deckId, "table", c)
 	remainingTable := TablePile.Remaining
 
 	if remainingTable == 0 {
