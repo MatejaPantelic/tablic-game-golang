@@ -1,4 +1,4 @@
-package middleware
+package authorization
 
 import (
 	"fmt"
@@ -6,13 +6,15 @@ import (
 	"os"
 	"strings"
 	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"main.go/constants"
 )
 
-func CheckAuthTokenDeckId(c *gin.Context) {
+func CheckAuthTokenUser(c *gin.Context) {
 	//extract parameter from request
+	userid := c.Param("userId")
 	deckId := c.Param("deckId")
 
 	//get authorization header
@@ -43,13 +45,22 @@ func CheckAuthTokenDeckId(c *gin.Context) {
 		return []byte(os.Getenv("SECRET")), nil
 	})
 
-	// validation if player is in game, validation if token has expired
+	// validation if player owns the cards, validation if token has expired
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 
-		if deckId != claims["deck_id"] {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": constants.FORBIDDEN_ACCESS})
-			c.AbortWithStatus(http.StatusUnauthorized)
+		// check if userId doesn't exist in request/this auth middleware function works for all routes, some routes checking only deckId but other check only userID
+		if userid != "" {
+			if userid != claims["user_id"] {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": constants.FORBIDDEN_ACCESS})
+				c.AbortWithStatus(http.StatusUnauthorized)
+			}
+		} else {
+			if deckId != claims["deck_id"] {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": constants.FORBIDDEN_ACCESS})
+				c.AbortWithStatus(http.StatusUnauthorized)
+			}
 		}
+
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": constants.TOKEN_EXPIRED})
 			c.AbortWithStatus(http.StatusUnauthorized)
