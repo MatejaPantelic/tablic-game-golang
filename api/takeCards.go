@@ -150,7 +150,6 @@ func isGroupValid(c *gin.Context, HandCard string, TakenCards []string)(valid bo
 		}
 		sum += val
 	}
-	fmt.Println(HandCardValue)
 
 	//As the sum of each combination differs by 10, we will check countA+1 sums each greater by 10
 	//If modul of any sum by HandCardValue is 0, player can take cards otherwise he can't
@@ -201,7 +200,7 @@ func TakeCardsFromTable(c *gin.Context){
 	//VALIDATE EACH CARDS GROUP
 	for _, group := range TakenCardsGroups{
 		TakenCards = strings.Split(group, ",")
-
+		
 		//VALIDATE CARD FROM HAND
 		if(!existsInDeck(HandCard)){
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
@@ -257,5 +256,8 @@ func TakeCardsFromTable(c *gin.Context){
 		"user_hand_cards": getCardsFromPile(deckId,handPile).Piles,
 		"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
 	})
+
+	Score(deckId, takenPile, cards + "," + HandCard, true)
+	FinishGame(c, deckId)
 	
 }
