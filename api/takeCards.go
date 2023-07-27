@@ -133,6 +133,8 @@ func TakeCardsFromTable(c *gin.Context){
 		//VALIDATE CARD FROM HAND
 		if(!tools.ExistsInDeck(HandCard)){
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected hand card does not exist in the deck."})
+			//increase number of unsuccessfully taken cards
+			tools.UnsuccessfullyTakenCards.Inc()
 			return
 		}
 
@@ -140,6 +142,8 @@ func TakeCardsFromTable(c *gin.Context){
 
 		if(!tools.ExistsInPile(HandCard, HandCards)){
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
+			//increase number of unsuccessfully taken cards
+			tools.UnsuccessfullyTakenCards.Inc()
 			return
 		}
 
@@ -148,11 +152,15 @@ func TakeCardsFromTable(c *gin.Context){
 		for _, cardTaken := range TakenCards {
 			if(!tools.ExistsInDeck(cardTaken)){
 				c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
+				//increase number of unsuccessfully taken cards
+				tools.UnsuccessfullyTakenCards.Inc()
 				return
 			}
 			
 			if(!tools.ExistsInPile(cardTaken, TableCards))	{
 				c.JSON(http.StatusForbidden, gin.H{"response": "Some of selected cards is not on the table."})
+				//increase number of unsuccessfully taken cards
+				tools.UnsuccessfullyTakenCards.Inc()
 				return
 			}	
 		}
@@ -167,6 +175,8 @@ func TakeCardsFromTable(c *gin.Context){
 	//IF ONE OF THE CARDS GROUP IS NOT VALID
 	if(!valid){
 		c.JSON(http.StatusNotFound, gin.H{"response": "You can't take chosen cards"})
+		//increase number of unsuccessfully taken cards
+		tools.UnsuccessfullyTakenCards.Inc()
 		return
 	}
 
@@ -189,4 +199,7 @@ func TakeCardsFromTable(c *gin.Context){
 	Score(deckId, takenPile, cards + "," + HandCard, true,c)
 	FinishGame(c, deckId)
 	
+	//increase number of successfully taken cards
+	tools.SuccessfullyTakenCards.Inc()
+
 }
