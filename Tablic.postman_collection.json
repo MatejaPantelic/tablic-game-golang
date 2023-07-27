@@ -1,0 +1,114 @@
+{
+	"info": {
+		"_postman_id": "39a17402-fbad-4697-93dc-c86728853cc9",
+		"name": "Tablic",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "28802552",
+		"_collection_link": "https://crimson-zodiac-560850.postman.co/workspace/10bdaa02-30a8-47a5-85ea-3d8db4a5354a/collection/28657659-39a17402-fbad-4697-93dc-c86728853cc9?action=share&creator=28802552&source=collection_link"
+	},
+	"item": [
+		{
+			"name": "New Deck of Cards",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:3000/cards"
+			},
+			"response": []
+		},
+		{
+			"name": "add Player",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"mika\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:3000/addPlayer"
+			},
+			"response": []
+		},
+		{
+			"name": "token",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:3000/gettoken/2/x40xwg4hvpyq"
+			},
+			"response": []
+		},
+		{
+			"name": "showing cards",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZWNrX2lkIjoieDQweHdnNGh2cHlxIiwiZXhwIjoxNjkxNjgzMzY4LCJ1c2VyX2lkIjoiMSJ9.drLRVUsJ1mneZ--9Oxwcnpnhm5SRSY2BF1W_WNPew0I",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": "localhost:3000/cards/1/x40xwg4hvpyq"
+			},
+			"response": []
+		},
+		{
+			"name": "take cards from table",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"hand_card\":\"3H\",\r\n    \"taken_cards\":\"3S\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "localhost:3001/takecardsfromtable/x40xwg4hvpyq/hand2/taken2"
+			},
+			"response": []
+		},
+		{
+			"name": "listing cards",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "https://www.deckofcardsapi.com/api/deck/x40xwg4hvpyq/pile/table/list/"
+			},
+			"response": []
+		},
+		{
+			"name": "throw cards on table",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "localhost:3001/throwCard/KH/x40xwg4hvpyq/hand1"
+			},
+			"response": []
+		}
+	]
+}

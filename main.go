@@ -32,12 +32,15 @@ func main() {
 
 	r := gin.Default()
 
+	// Middleware applied to all routes within the /cards group
+	// cardsGroup := r.Group("")
+	// cardsGroup.Use(authorization.CheckAuthTokenUser("deckId"))
+	// cardsGroup.GET("/throwCard/:cardCode/:deckId/:playerPile", api.ShowPlayerCards)
+
 	r.POST("/addPlayer", api.AddPlayerHandler)
 	r.GET("/cards", api.NewDeckHandler)
-	r.GET("/cards/:userId/:deckId", authorization.CheckAuthTokenUser, api.ShowPlayerCards)
-	// r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", authorization.CheckAuthTokenUser, api.TakeCardsFromTable)
+	r.GET("/cards/:userId/:deckId", api.ShowPlayerCards)
 	r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", api.TakeCardsFromTable)
-	// r.GET("/throwCard/:cardCode/:deckId/:playerPile", authorization.CheckAuthTokenUser, api.ThrowCardHandler)
 	r.GET("/throwCard/:cardCode/:deckId/:playerPile", api.ThrowCardHandler)
 	r.GET("/gettoken/:userId/:deckId", authorization.MakeToken)
 
