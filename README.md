@@ -460,4 +460,4 @@ var DatabaseErrorCounter = prometheus.NewCounter(
 
 ```
 
-## [Link to Collection of all tested routes](https://crimson-zodiac-560850.postman.co/workspace/My-Workspace~10bdaa02-30a8-47a5-85ea-3d8db4a5354a/collection/28657659-39a17402-fbad-4697-93dc-c86728853cc9?action=share&creator=28802552)
+## [Link to Collection of all tested routes](https://github.com/comtrade360/Edit-Software-BigGun/blob/master/Tablic.postman_collection.json)
