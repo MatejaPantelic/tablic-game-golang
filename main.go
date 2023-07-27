@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"main.go/api"
+	"main.go/authorization"
 	"main.go/initializers"
-	"main.go/middleware"
 )
 
 func init() {
@@ -17,10 +17,10 @@ func main() {
 
 	r.POST("/addPlayer", api.AddPlayerHandler)
 	r.GET("/cards", api.NewDeckHandler)
-	r.GET("/cards/:userId/:deckId", middleware.CheckAuthTokenUserId, api.ShowPlayerCards)
-	r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", middleware.CheckAuthTokenDeckId, api.TakeCardsFromTable)
-	r.GET("/throwCard/:cardCode/:deckId/:playerPile", middleware.CheckAuthTokenDeckId, api.ThrowCardHandler)
-	r.GET("/gettoken/:userId/:deckId", api.MakeToken)
+	r.GET("/cards/:userId/:deckId", authorization.CheckAuthTokenUser, api.ShowPlayerCards)
+	r.GET("/takecardsfromtable/:deckId/:handPile/:takenPile", authorization.CheckAuthTokenUser, api.TakeCardsFromTable)
+	r.GET("/throwCard/:cardCode/:deckId/:playerPile", authorization.CheckAuthTokenUser, api.ThrowCardHandler)
+	r.GET("/gettoken/:userId/:deckId", authorization.MakeToken)
 
 	r.Run()
 
