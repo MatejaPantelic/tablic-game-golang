@@ -15,6 +15,8 @@ type Game struct {
 	HandPile      string `json:"handPile"`
 	CollectedPile string `json:"collectedPile"`
 	First         bool   `json:"first"`
+	CollectedLast bool   `json:"collectedLast"`
+	GameFinished  bool   `json:"gameFinished"`
 	UserID        int    `json:"user_id"`
 	User          User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
