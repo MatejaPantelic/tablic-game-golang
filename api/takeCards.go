@@ -182,8 +182,8 @@ func TakeCardsFromTable(c *gin.Context){
 
 	c.JSON(http.StatusOK, gin.H{
 		"response": "Cards are moved from hand and table pile to taken pile",
-		"user_hand_cards": tools.GetCardsFromPile(deckId,handPile,c).Piles, 
-		"table_cards": tools.GetCardsFromPile(deckId,"table",c).Piles.Table, 
+		"user_hand_cards": tools.ListPileCards(deckId, handPile, c), 
+		"table_cards": tools.ListPileCards(deckId, "table", c),
 	})
 
 	Score(deckId, takenPile, cards + "," + HandCard, true,c)

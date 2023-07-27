@@ -141,15 +141,6 @@ func ExistsInPile(cardCode string, pile []models.CardList)(exist bool){
 	return
 }
 
-func GetCardsFromPile(deckId string, playerPile string, c *gin.Context)(cardInPiles models.ListCardResponse){
-	playerCards, _ := http.Get(fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deckId, playerPile))			 
-	body := ParseJsonToStruct(playerCards, c)
-	err := json.Unmarshal(body, &cardInPiles)
-	ErrorCheck(err, 400, "Failed to fetch data from API", c)
-	defer playerCards.Body.Close()
-	return
-}
-
 func WhoPlaysNext(c *gin.Context, playerPile string, deckId string){
 	var game models.Game
 	//set attribute "first" on false for player 1

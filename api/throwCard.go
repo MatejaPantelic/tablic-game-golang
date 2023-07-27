@@ -35,8 +35,8 @@ func ThrowCardHandler(c *gin.Context) {
 				existInHand = false
 				c.JSON(http.StatusOK, gin.H{
 					"message": "The card is thrown on the table", 
-					"user_hand_cards": tools.GetCardsFromPile(deckId,playerPile,c).Piles,
-					"table_cards": tools.GetCardsFromPile(deckId,"table",c).Piles.Table,
+					"user_hand_cards": tools.ListPileCards(deckId, playerPile, c), 
+					"table_cards": tools.ListPileCards(deckId, "table", c),
 				})
 				// create variable type of structure Game
 				tools.WhoPlaysNext(c, playerPile, deckId)
