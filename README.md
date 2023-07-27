@@ -431,7 +431,6 @@ The format of the response received when calling this endpoint is:
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZWNrX2lkIjoiNTVpeHk3enA5eXd1IiwiZXhwIjoxNjkxNjg0NTY2LCJ1c2VyX2lkIjoiMiJ9.a87eqrvtIkj3Z0fZ156rQbfB__w2nIKNbgVaCzMkSME"
 }
 ```
-
 ## Metrics
 
  Metrics are numerical parameters important for monitoring application performance.
@@ -450,7 +449,7 @@ Number of successful and unsuccessful calls endpoint for taken cards
 
 ### An example of creating a metric to track the number of errors when connecting to a database:
 
-````go
+```go
 
 var DatabaseErrorCounter = prometheus.NewCounter(
     prometheus.CounterOpts{
