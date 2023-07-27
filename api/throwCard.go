@@ -38,17 +38,22 @@ func ThrowCardHandler(c *gin.Context) {
 					"user_hand_cards": tools.ListPileCards(deckId, playerPile, c), 
 					"table_cards": tools.ListPileCards(deckId, "table", c),
 				})
-				// create variable type of structure Game
 				tools.WhoPlaysNext(c, playerPile, deckId)
+                //increasing number of thrown cards
+                tools.SuccessfullyThrownCards.Inc()
 
 				FinishGame(c, deckId)
 
 			} else {
 				c.JSON(http.StatusOK, gin.H{"response": "The selected card is not in your hand."})
+				//increase number of unsuccessfully thrown cards
+                tools.UnsuccessfullyThrownCards.Inc()
 			}
 
 		} else {
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected card does not exist in the deck."})
+			//increase number of unsuccessfully thrown cards
+			tools.UnsuccessfullyThrownCards.Inc()
 	}
 	}else{
 		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent play next."})

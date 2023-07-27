@@ -81,7 +81,9 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
         tools.ErrorCheck(result2.Error, 500, "Failed to add second player into DB ", c)
 
 		c.JSON(201, gin.H{"message": "Game has started", "game1": newGame, "game2": newGame2})
-		
+		//increase number of successfully started games
+		tools.SuccessfullyStartedGame.Inc()
+
 
 		//Taking 6 cards from deck and forming cards for player1 hands
 		tools.CreatePile("6", deckResponse.DeckID, newGame.HandPile, c)
@@ -94,5 +96,8 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 
 	} else {
 		c.JSON(500, gin.H{"message": "Error starting game"})
+		//increasing the number of unsuccessful attempts to start the game
+		tools.UnsuccessfullyStartedGame.Inc()
+
 	}
 }

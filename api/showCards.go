@@ -37,6 +37,9 @@ func ShowPlayerCards(c *gin.Context) {
 
 	if err != nil {
 		tools.CheckError(http.StatusBadRequest, c, err, "Hand cards are not found!")
+		//increasing the number of unsuccessful requests to display cards
+		tools.UnsuccessfullyShowedCards.Inc()
+
 		return
 	}
 
@@ -68,6 +71,8 @@ func ShowPlayerCards(c *gin.Context) {
 	//handle if there some error from nttp
 	if err != nil {
 		tools.CheckError(http.StatusBadRequest, c, err, "Table cards are not found!")
+		//increasing the number of unsuccessful requests to display cards
+        tools.UnsuccessfullyShowedCards.Inc()
 		return
 	}
 
@@ -84,6 +89,9 @@ func ShowPlayerCards(c *gin.Context) {
 
 	//return response with needed information
 	c.JSON(http.StatusOK, gin.H{"User_hand_cards": handcardsarray, "Cards_from_table": drawResponseDeck.Piles.Table})
+	//increasing the number of successful requests to display cards
+    tools.SuccessfullyShowedCards.Inc()
+
 }
 
 func NewDeckHandler(c *gin.Context) {

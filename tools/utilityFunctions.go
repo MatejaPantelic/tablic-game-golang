@@ -24,6 +24,9 @@ func ParseJsonToStruct(resp *http.Response, c *gin.Context)(body []byte){
 func ErrorCheck(err error, errCode int, errMsg string, c *gin.Context) {
 	if err != nil {
 		c.JSON(errCode, gin.H{"message": errMsg})
+		//increase number of parsing error 
+		ParsingErrorCounter.Inc()
+
 		return
 	}
 }
@@ -245,6 +248,9 @@ func JsonParse(response *http.Response, c *gin.Context, parameter interface{}) e
 	//check error during reading response
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Error during reading response!"})
+		//increase number of parsing error 
+		ParsingErrorCounter.Inc()
+
 	}
 
 	// error expectation if exist
