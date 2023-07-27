@@ -24,6 +24,61 @@ func parseJsonToStruct(resp *http.Response)(body []byte){
 
 	return
 }
+// Helper function for error responses
+func errorCheck(err error, errCode int, errMsg string, c *gin.Context) {
+	if err != nil {
+		c.JSON(errCode, gin.H{"message": errMsg})
+		return
+	}
+}
+
+func addToPile(deckID string, pileToBeCreated string, cardCodes string, c *gin.Context){
+	addToPileURL := fmt.Sprintf(constants.ADD_TO_PILE_URL, deckID, pileToBeCreated, cardCodes)
+	newPile, err := http.Get(addToPileURL)
+	errorCheck(err, 500, "Failed API call-Add to Pile", c)
+	defer newPile.Body.Close()
+
+	if newPile.StatusCode == http.StatusOK {
+		var player1HandPileResponse models.AddingToPilesResponse
+
+		err = json.NewDecoder(newPile.Body).Decode(&player1HandPileResponse)
+		errorCheck(err, 400, "Failed to fetch data from API call", c)
+	}
+}
+
+
+// Used to create 3 piles at the start of game
+// Those 3 piles are player hands(for each player) and table pile
+func createPile(numberOfCards string, deckID string, pileToBeCreated string, c *gin.Context) {
+	draw_A_Card := fmt.Sprintf(constants.DRAW_A_CARD_URL, deckID, numberOfCards)
+	drawnCards, err := http.Get(draw_A_Card)
+	errorMessage := "Error starting the game"
+	errorCheck(err, 500, errorMessage, c)
+	defer drawnCards.Body.Close()
+
+	if drawnCards.StatusCode == http.StatusOK {
+
+		var drawnCardsResponse struct {
+			Success   bool          `json:"success"`
+			DeckId    string        `json:"deck_id"`
+			Cards     []models.Card `json:"cards"`
+			Remaining int           `json:"remaining"`
+		}
+
+		err = json.NewDecoder(drawnCards.Body).Decode(&drawnCardsResponse)
+		errorCheck(err, 500, errorMessage, c)
+
+		//Taking card codes for API URL
+		cardCodes := ""
+		for i := 0; i < len(drawnCardsResponse.Cards); i++ {
+			cardCodes += drawnCardsResponse.Cards[i].Code
+			if i < len(drawnCardsResponse.Cards)-1 {
+				cardCodes += ","
+			}
+		}
+		addToPile(deckID,pileToBeCreated,cardCodes,c)
+	}
+}
 
 //Function for checking if card exists in deck
 func existsInDeck(cardCode string)(exist bool){

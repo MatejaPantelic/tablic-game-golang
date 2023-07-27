@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"main.go/constants"
 	"main.go/initializers"
@@ -14,18 +12,10 @@ import (
 // Making the queue where player will be stored until game starts
 var queue []models.User
 
-// Helper function for error responses
-func errorCheck(err error, errCode int, errMsg string, c *gin.Context) {
-	if err != nil {
-		c.JSON(errCode, gin.H{"message": errMsg})
-		return
-	}
-}
-
 // Function- adds player to queue.
 // Creates a new user according to model, checks for possible errors, adds user to database and to queue
 // If enough players are in queue, remove those player from queue and calls function startGame
-func addPlayerHandler(c *gin.Context) {
+func AddPlayerHandler(c *gin.Context) {
 	var newUser models.User
 
 	err := c.BindJSON(&newUser)
@@ -48,9 +38,8 @@ func addPlayerHandler(c *gin.Context) {
 // Creates a game, deck and piles (player hands and table cards)
 func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 	// Deck creation/alocation
-	errorResponse := "Error starting the game"
 	response, err := http.Get(constants.NEW_SHUFFLED_DECK)
-	errorCheck(err, http.StatusBadRequest, errorResponse, c)
+	errorCheck(err, http.StatusBadRequest, "Error starting the game-failed to fetch deck", c)
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusOK {
@@ -59,7 +48,7 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 		}
 
 		err = json.NewDecoder(response.Body).Decode(&deckResponse)
-		errorCheck(err, http.StatusBadGateway, errorResponse, c)
+		errorCheck(err, http.StatusBadGateway, "Failed to fetch deckID", c)
 
 		//Game creation
 		newGame := models.Game{
@@ -74,7 +63,7 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 			User:          player1,
 		}
 		result := initializers.DB.Create(&newGame)
-		errorCheck(result.Error, 500, errorResponse, c)
+		errorCheck(result.Error, 500, "Failed to add first player into DB ", c)
 
 		newGame2 := models.Game{
 			Score:         0,
@@ -88,13 +77,10 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 			User:          player2,
 		}
 		result2 := initializers.DB.Create(&newGame2)
+        errorCheck(result2.Error, 500, "Failed to add second player into DB ", c)
 
-		if result2.Error != nil {
-			c.JSON(500, gin.H{"message": errorResponse})
-			return
-		} else {
-			c.JSON(201, gin.H{"message": "Game has started", "game1": newGame, "game2": newGame2})
-		}
+		c.JSON(201, gin.H{"message": "Game has started", "game1": newGame, "game2": newGame2})
+		
 
 		//Taking 6 cards from deck and forming cards for player1 hands
 		createPile("6", deckResponse.DeckID, newGame.HandPile, c)
@@ -106,57 +92,6 @@ func startGame(player1 models.User, player2 models.User, c *gin.Context) {
 		createPile("4", deckResponse.DeckID, newGame.TablePile, c)
 
 	} else {
-		c.JSON(500, gin.H{"message": errorResponse})
+		c.JSON(500, gin.H{"message": "Error starting game"})
 	}
-}
-
-// Used to create 3 piles at the start of game
-// Those 3 piles are player hands(for each player) and table pile
-func createPile(numberOfCards string, deckID string, pileToBeCreated string, c *gin.Context) {
-	draw_A_Card := fmt.Sprintf(constants.DRAW_A_CARD_URL, deckID, numberOfCards)
-	drawnCards, err := http.Get(draw_A_Card)
-	errorMessage := "Error starting the game"
-	errorCheck(err, 500, errorMessage, c)
-	defer drawnCards.Body.Close()
-
-	if drawnCards.StatusCode == http.StatusOK {
-
-		var drawnCardsResponse struct {
-			Success   bool          `json:"success"`
-			DeckId    string        `json:"deck_id"`
-			Cards     []models.Card `json:"cards"`
-			Remaining int           `json:"remaining"`
-		}
-
-		err = json.NewDecoder(drawnCards.Body).Decode(&drawnCardsResponse)
-		errorCheck(err, 500, errorMessage, c)
-
-		//Taking card codes for API URL
-		cardCodes := ""
-		for i := 0; i < len(drawnCardsResponse.Cards); i++ {
-			cardCodes += drawnCardsResponse.Cards[i].Code
-			if i < len(drawnCardsResponse.Cards)-1 {
-				cardCodes += ","
-			}
-		}
-
-		addToPileURL := fmt.Sprintf(constants.ADD_TO_PILE_URL, deckID, pileToBeCreated, cardCodes)
-		newPile, err := http.Get(addToPileURL)
-		errorCheck(err, 500, errorMessage, c)
-		defer newPile.Body.Close()
-
-		if newPile.StatusCode == http.StatusOK {
-			var player1HandPileResponse models.AddingToPilesResponse
-
-			err = json.NewDecoder(newPile.Body).Decode(&player1HandPileResponse)
-			if err != nil {
-				c.JSON(500, gin.H{"message": "Error starting the game"})
-				return
-			}
-		}
-	}
-}
-
-func InitializeHandlers(router *gin.Engine) {
-	router.POST("/addPlayer", addPlayerHandler)
 }

@@ -18,9 +18,7 @@ func ThrowCardHandler(c *gin.Context) {
 	// create variable type of structure Game
 	var game models.Game
 	result := initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", playerPile, deckId).Find(&game)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-	}
+	errorCheck(result.Error, 400, "Failed to fetch data from DB",c)
 	//checking if it is the player's turn to play
 	if game.First{
 		var exist bool = existsInDeck(cardCode) 
@@ -55,11 +53,9 @@ func ThrowCardHandler(c *gin.Context) {
 	}else{
 		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent play next."})
 	}
+} 
 
-	
-	
-
-} //Function for checking if cards exists in the player's hand
+//Function for checking if cards exists in the player's hand
 func isCardInHand(playerPile string, cardInPiles models.ListCardResponse, cardCode string) bool {
 	if playerPile == "hand1" {
 		size := len(cardInPiles.Piles.Hand1.Cards)

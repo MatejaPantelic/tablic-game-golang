@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"main.go/models"
 	"encoding/json"
-	"log"
 	"net/http"
 	"fmt"
 	"strings"
@@ -14,64 +13,38 @@ import (
 )
 
 //Function for listing cards in a pile
-func listPileCards(deck string, pileName string)(CardsArray []models.CardList){
-	url := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deck, pileName)
-	resp, errURL := http.Get(url)
-	if errURL != nil {
-		log.Fatal(errURL)
-	}
+func listPileCards(deck string, pileName string, c *gin.Context)(CardsArray []models.CardList){
+	listPileCardsURL := fmt.Sprintf(constants.LIST_PILE_CARDS_URL, deck, pileName)
+	resp, errURL := http.Get(listPileCardsURL)
+	errorCheck(errURL,500,"Faile API call - List pile cards",c)
 
 	body := parseJsonToStruct(resp) 
 
 	var ListCardResponse models.ListCardResponse
 	err := json.Unmarshal(body, &ListCardResponse)
-	if(err != nil){
-		log.Fatal(err)
-	}
+	errorCheck(err,400,"Faile to fetch data from API",c)
 
 	switch(pileName){
-	case "hand1": CardsArray = ListCardResponse.Piles.Hand1.Cards
-	case "hand2": CardsArray = ListCardResponse.Piles.Hand2.Cards
-	case "table": CardsArray = ListCardResponse.Piles.Table.Cards
-	default: 
+	 case "hand1": CardsArray = ListCardResponse.Piles.Hand1.Cards
+	 case "hand2": CardsArray = ListCardResponse.Piles.Hand2.Cards
+	 case "table": CardsArray = ListCardResponse.Piles.Table.Cards
+	 default: 
 	}
 
 	return
 }
 
 //Function for drawing cards from a pile
-func drawCardsFromPile(deck string, pileName string, cards string){
-	url := fmt.Sprintf(constants.DRAW_CARDS_FROM_PILE_URL, deck, pileName, cards)
-	resp, errURL := http.Get(url)
-	if errURL != nil {
-		log.Fatal(errURL)
-	}
+func drawCardsFromPile(deck string, pileName string, cards string, c *gin.Context){
+	drawCardsFromPileURL := fmt.Sprintf(constants.DRAW_CARDS_FROM_PILE_URL, deck, pileName, cards)
+	resp, errURL := http.Get(drawCardsFromPileURL)
+	errorCheck(errURL,500,"Faile API call - Draw cards from pile",c)
 
 	body := parseJsonToStruct(resp) 
 
 	var DrowCardResponse models.DrawingFromPilesResponse
 	err := json.Unmarshal(body, &DrowCardResponse)
-	if(err != nil){
-		log.Fatal(err)
-	}
-}
-
-//Function for adding cards to a pile
-func addToPile(deck string, pileName string, cards string){
-	url := fmt.Sprintf(constants.ADD_TO_PILE_URL, deck, pileName, cards)
-	resp, errURL := http.Get(url)
-	if errURL != nil {
-		log.Fatal(errURL)
-	}
-
-	body := parseJsonToStruct(resp) 
-
-	var AddCardsResponse models.AddingToPilesResponse
-	err := json.Unmarshal(body, &AddCardsResponse)
-	if(err != nil){
-		log.Fatal(err)
-	}
-
+	errorCheck(err,400,"Faile to fetch data from API",c)
 }
 
 //Function that changes who collected last
@@ -79,14 +52,11 @@ func changeWhoCollectedLast(c *gin.Context, handPile string, deckId string){
 	var game models.Game
 	//set attribute "collected_last" on false for player 1
 	result :=initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Update("collected_last", true)
-	if result.Error != nil {
-		c.JSON(http.StatusOK, gin.H{"message": result.Error})
-	}
+	errorCheck(result.Error,400,"Failed DB update",c)
+
 	//set attribute "collected_last" on true for player 2
 	result =initializers.DB.Model(&game).Where("hand_pile NOT IN (?) AND deck_pile = ?", handPile, deckId).Update("collected_last", false)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-	}
+	errorCheck(result.Error,400,"Failed DB update",c)
 }
 
 type RequestData struct{
@@ -174,9 +144,7 @@ func TakeCardsFromTable(c *gin.Context){
 	//CHECK IF IT PLAYER'S TURN
 	var game models.Game
 	result := initializers.DB.Model(&game).Where("hand_pile = ? AND deck_pile = ?", handPile, deckId).Find(&game)
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-	}
+	errorCheck(result.Error,400,"Failed to find game",c)
 
 	if !game.First{
 		c.JSON(http.StatusBadRequest, gin.H{"response": "The opponent plays next."})
@@ -186,10 +154,8 @@ func TakeCardsFromTable(c *gin.Context){
 	//EXTRACT BODY REQUEST
 	var RequestData RequestData
 	err := c.BindJSON(&RequestData)
-	if(err != nil){
-		c.JSON(http.StatusBadRequest, gin.H{"response": "Failed to read body"})
-		return
-	}
+	errorCheck(err,400,"Failed to read body",c)
+
 	HandCard := RequestData.HandCard
 	TakenCardsString := RequestData.TakenCards
 	TakenCardsGroups := strings.Split(TakenCardsString, ";")
@@ -207,7 +173,7 @@ func TakeCardsFromTable(c *gin.Context){
 			return
 		}
 
-		var HandCards []models.CardList = listPileCards(deckId, handPile)
+		var HandCards []models.CardList = listPileCards(deckId, handPile,c)
 
 		if(!existsInPile(HandCard, HandCards)){
 			c.JSON(http.StatusForbidden, gin.H{"response": "The selected card is not in your hand."})
@@ -215,7 +181,7 @@ func TakeCardsFromTable(c *gin.Context){
 		}
 
 		//VALIDATE CARDS FROM TABLE
-		var TableCards []models.CardList = listPileCards(deckId, "table")
+		var TableCards []models.CardList = listPileCards(deckId, "table",c)
 		for _, cardTaken := range TakenCards {
 			if(!existsInDeck(cardTaken)){
 				c.JSON(http.StatusForbidden, gin.H{"response": "The selected table card does not exist in the deck."})
@@ -242,10 +208,10 @@ func TakeCardsFromTable(c *gin.Context){
 	}
 
 	//IF VALID MOVE CARDS FROM HAND AND TABLE PILE TO TAKEN PILE
-	drawCardsFromPile(deckId, handPile, HandCard)
+	drawCardsFromPile(deckId, handPile, HandCard,c)
 	cards := strings.Join(TakenCardsGroups, ",")
-	drawCardsFromPile(deckId, "table", cards)
-	addToPile(deckId, takenPile, cards+","+HandCard)
+	drawCardsFromPile(deckId, "table", cards,c)
+	addToPile(deckId, takenPile, cards+","+HandCard,c)
 
 	//NOTE THAT THIS PLAYER HAS COLLECTED CARDS LAST AND CHANGE WHO PLAYS NEXT
 	whoPlaysNext(c, handPile, deckId)
@@ -257,7 +223,7 @@ func TakeCardsFromTable(c *gin.Context){
 		"table_cards": getCardsFromPile(deckId,"table").Piles.Table,
 	})
 
-	Score(deckId, takenPile, cards + "," + HandCard, true)
+	Score(deckId, takenPile, cards + "," + HandCard, true,c)
 	FinishGame(c, deckId)
 	
 }

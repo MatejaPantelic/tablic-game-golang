@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"main.go/models"
-	"log"
 	"net/http"
 	"fmt"
 	"strings"
@@ -13,12 +12,10 @@ import (
 
 
 
-func returnCardsToDeck(deckId string){
+func returnCardsToDeck(deckId string, c *gin.Context){
 	url := fmt.Sprintf(constants.RETURN_TO_DECK_URL, deckId)
 	_, errURL := http.Get(url)
-	if errURL != nil {
-		log.Fatal(errURL)
-	}
+	errorCheck(errURL, 400, "Failed API call-Return to deck",c)
 }
 
 func numberOfCards(deckId string) string {
@@ -60,26 +57,25 @@ func FinishGame(c *gin.Context, deckId string){
 	//Check if table is empty
 	if(!emptyTable(deckId)){
 		//Draw cards from table
-		cardsList := listPileCards(deckId, "table")
+		cardsList := listPileCards(deckId, "table",c)
 		cards := make([]string, 0)
 		for _,card := range cardsList{
 			cards = append(cards, card.Code)
 		}
 		cardsString := strings.Join(cards, ",")
-		drawCardsFromPile(deckId, "table", cardsString)
+		drawCardsFromPile(deckId, "table", cardsString,c)
 
 		//Check who collected last
 		var game models.Game
 		result := initializers.DB.Model(&game).Where("deck_pile = ? AND collected_last = true", deckId).Find(&game)
-		if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-		}
+		errorCheck(result.Error, 400, "Failed to fetch DB data",c)
+		
 
 		//Add to taken pile of the player who collected last
-		addToPile(deckId, game.CollectedPile, cardsString)
+		addToPile(deckId, game.CollectedPile, cardsString,c)
 		
 		//Update points
-		Score(deckId, game.CollectedPile, cardsString, false)
+		Score(deckId, game.CollectedPile, cardsString, false,c)
 
 		//Check who has more cards
 		playerMoreCards := numberOfCards(deckId)
@@ -88,16 +84,12 @@ func FinishGame(c *gin.Context, deckId string){
 		if(playerMoreCards != "equal"){
 			var game models.Game
 			err := initializers.DB.Where("deck_pile = ? and  collected_pile = ?", deckId, playerMoreCards).Find(&game).Error
-			if err != nil {
-				log.Fatal("Can't find game")
-			}
+			errorCheck(err, 400, "Can't find game",c)
 
 			game.Score += 3
 
 			result := initializers.DB.Model(&game).Where("collected_pile = ? AND deck_pile = ?", game.CollectedPile, deckId).Update("score", game.Score)
-			if result.Error != nil {
-				log.Fatal("Error updating score")
-			}
+			errorCheck(result.Error, 400, "Error updating score",c)
 		}
 		
 	}
@@ -107,9 +99,7 @@ func FinishGame(c *gin.Context, deckId string){
 	var game models.Game
 	var games []models.Game
 	result := initializers.DB.Model(&game).Where("deck_pile = ? AND collected_last = true", deckId).Find(&games)
-	if result.Error != nil {
-	c.JSON(http.StatusBadRequest, gin.H{"message": result.Error})
-	}
+	errorCheck(result.Error, 400, "Failed to fetch data from DB",c)
 
 	end := false
 	for _,game := range games{
@@ -120,18 +110,14 @@ func FinishGame(c *gin.Context, deckId string){
 	}
 
 	if(end){
-		// for _,game := range games{
-			result :=initializers.DB.Model(&game).Where("deck_pile = ?", deckId).Update("game_finished", true)
-			if result.Error != nil {
-				c.JSON(http.StatusOK, gin.H{"message": result.Error})
-			}
-		// }
+		result :=initializers.DB.Model(&game).Where("deck_pile = ?", deckId).Update("game_finished", true)
+		errorCheck(result.Error, 400, "Failed to finish game",c)
 		return
 	}
 
 	//If game is not finshed - create new round
 	//Move all cards from piles to deck
-	returnCardsToDeck(deckId)
+	returnCardsToDeck(deckId,c)
 	createPile("6", deckId, "hand1", c)
 	createPile("6", deckId, "hand2", c)
 	createPile("4", deckId, "table", c)
